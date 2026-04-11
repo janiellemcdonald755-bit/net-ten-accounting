@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import '../index.css';
 import { auth, db } from './firebase';
+import './index.css';
 const appId = 'net-ten-accounting';
 import { 
   getAuth, 
@@ -39,6 +39,10 @@ export default function App() {
   const [session, setSession] = useState(null); 
 
   useEffect(() => {
+    const script = document.createElement('script');
+    script.src = "https://cdn.tailwindcss.com";
+    script.async = true;
+    document.head.appendChild(script);
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -115,6 +119,7 @@ export default function App() {
               src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" 
               alt="NET TEN LTD Logo" 
               className="w-10 h-10 object-contain bg-white rounded-full p-1"
+              style={{ width: '40px', height: '40px', minWidth: '40px' }}
             />
             <h1 className="font-bold text-lg tracking-wider">NET TEN LTD</h1>
           </div>
