@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './firebase';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
