@@ -7,7 +7,7 @@ const firebaseConfig = {
   authDomain: "net-ten-accounting.firebaseapp.com",
   projectId: "net-ten-accounting",
   storageBucket: "net-ten-accounting.appspot.com",
-  messagingSenderId: "123456789",
+  messagingSenderId: "123456789";
   appId: "your-app-id"
 };
 
