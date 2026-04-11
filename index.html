@@ -1,14 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html>
+<head>
     <title>Net Ten Accounting</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body>
-    <h1>HELLO THE WEBSITE IS WORKING</h1>
+</head>
+<body>
     <div id="root"></div>
-    <script type="module" src="./src/App.jsx"></script>
-  </body>
+
+    <script type="text/babel">
+        function App() {
+            return (
+                <div className="p-10">
+                    <h1 className="text-3xl font-bold text-blue-600">
+                        Success! The Old School Way Worked.
+                    </h1>
+                    <p className="mt-4">Net Ten Accounting is finally live.</p>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
