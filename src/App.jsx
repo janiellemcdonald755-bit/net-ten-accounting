@@ -3,27 +3,18 @@ import { auth, db } from './firebase';
 import './index.css';
 const appId = 'net-ten-accounting';
 import { 
-  getAuth, 
   signInWithCustomToken, 
   signInAnonymously, 
   onAuthStateChanged 
 } from 'firebase/auth';
 import { 
-  getFirestore, 
   doc, 
-  setDoc, 
   collection, 
-  onSnapshot, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc
+  onSnapshot 
 } from 'firebase/firestore';
 import { 
-  Users, Settings, Bell, LogOut, Calendar, Building, 
-  Plus, Edit2, Trash2, CheckCircle, ArrowRight, 
-  X, Copy, PhoneCall, Loader2, Send, Info, Lock, MapPin, User
+  Bell, LogOut, CheckCircle, Loader2
 } from 'lucide-react';
-
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -31,40 +22,24 @@ export default function App() {
   const [clients, setClients] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [appSettings, setAppSettings] = useState({ 
-  loginMethod: 'EMAIL_PASS',
+    loginMethod: 'EMAIL_PASS',
     adminEmail: 'admin@netten.com',
     adminPass: 'admin'
   });
-    const [isAsAdmin, setIsAsAdmin] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '', clientId: '', accessCode: '' });
   const [toast, setToast] = useState(null);
   const [session, setSession] = useState(null); 
-const handleSubmit = (e) => {
-    e.preventDefault();
-    if (isAsAdmin) {
-      const targetEmail = appSettings.adminEmail || 'admin@netten.com';
-      const targetPass = appSettings.adminPass || 'admin';
-      if (formData.email === targetEmail && formData.password === targetPass) {
-        setSession({ role: 'admin' });
-        showToast("Welcome Admin");
-      } else {
-        showToast("Invalid Admin credentials");
-      }
-    } else {
-      const client = clients.find(c => c.clientId === formData.clientId && c.accessCode === formData.accessCode);
-      if (client) {
-        setSession({ ...client, role: 'client' });
-        showToast(`Welcome ${client.name}`);
-      } else {
-        showToast("Invalid Client ID or Access Code");
-      }
-    }
+
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
   };
+
+  const handleLogout = () => {
+    setSession(null);
+    showToast("Logged out successfully");
+  };
+
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = "https://cdn.tailwindcss.com";
-    script.async = true;
-    document.head.appendChild(script);
     const initAuth = async () => {
       try {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -90,22 +65,19 @@ const handleSubmit = (e) => {
     const settingsDoc = doc(db, 'artifacts', appId, 'public', 'data', 'app_config', 'settings');
     const unsubSettings = onSnapshot(settingsDoc, (docSnap) => {
       if (docSnap.exists()) {
-        const data = docSnap.data();
-        setAppSettings(prev => ({ ...prev, ...data }));
+        setAppSettings(prev => ({ ...prev, ...docSnap.data() }));
       }
-    }, (err) => console.error("Settings error:", err));
+    });
 
     const clientsCol = collection(db, 'artifacts', appId, 'public', 'data', 'clients');
     const unsubClients = onSnapshot(clientsCol, (snapshot) => {
-      const clientList = snapshot.docs.map(d => ({ ...d.data(), firestoreId: d.id }));
-      setClients(clientList);
-    }, (err) => console.error("Clients error:", err));
+      setClients(snapshot.docs.map(d => ({ ...d.data(), firestoreId: d.id })));
+    });
 
     const notifCol = collection(db, 'artifacts', appId, 'public', 'data', 'notifications');
     const unsubNotifs = onSnapshot(notifCol, (snapshot) => {
-      const notifList = snapshot.docs.map(d => ({ ...d.data(), firestoreId: d.id }));
-      setNotifications(notifList);
-    }, (err) => console.error("Notifs error:", err));
+      setNotifications(snapshot.docs.map(d => ({ ...d.data(), firestoreId: d.id })));
+    });
 
     return () => {
       unsubSettings();
@@ -113,11 +85,6 @@ const handleSubmit = (e) => {
       unsubNotifs();
     };
   }, [user]);
-
-  const showToast = (message) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3000);
-  };
 
   if (loading) {
     return (
@@ -127,11 +94,7 @@ const handleSubmit = (e) => {
     );
   }
 
-  const handleLogout = () => {
-    setSession(null);
-    showToast("Logged out successfully");
-    };
-return (
+  return (
     <div className="min-h-screen bg-gray-50 font-sans pb-20 md:pb-0">
       <header 
         style={{ backgroundColor: '#0f172a', color: 'white', padding: '10px' }}
@@ -175,13 +138,11 @@ return (
             appSettings={appSettings}
             clients={clients}
             notifications={notifications}
-            showToast={showToast}
           />
         ) : (
           <ClientDashboard 
             client={session}
             notifications={notifications}
-            showToast={showToast}
           />
         )}
       </main>
@@ -189,13 +150,63 @@ return (
   );
 }
 
-// --- DASHBOARD COMPONENTS (Required for the app to load) ---
+// --- SUB-COMPONENTS ---
 
-function AdminDashboard({ appSettings, clients, notifications, showToast }) {
+function LoginScreen({ onLogin, appSettings, clients, showToast }) {
+  const [isAsAdmin, setIsAsAdmin] = useState(false);
+  const [formData, setFormData] = useState({ email: '', password: '', clientId: '', accessCode: '' });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isAsAdmin) {
+      if (formData.email === appSettings.adminEmail && formData.password === appSettings.adminPass) {
+        onLogin({ role: 'admin' });
+        showToast("Welcome Admin");
+      } else {
+        showToast("Invalid Admin credentials");
+      }
+    } else {
+      const client = clients.find(c => c.clientId === formData.clientId && c.accessCode === formData.accessCode);
+      if (client) {
+        onLogin({ ...client, role: 'client' });
+        showToast(`Welcome ${client.name}`);
+      } else {
+        showToast("Invalid Client ID or Access Code");
+      }
+    }
+  };
+
+  return (
+    <div className="p-4 flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="w-full max-w-sm bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+        <h2 className="text-xl font-bold mb-6 text-center">{isAsAdmin ? 'Admin Login' : 'Client Access'}</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {isAsAdmin ? (
+            <>
+              <input type="email" placeholder="Admin Email" required className="w-full p-3 border rounded" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+              <input type="password" placeholder="Password" required className="w-full p-3 border rounded" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+            </>
+          ) : (
+            <>
+              <input type="text" placeholder="Client ID" required className="w-full p-3 border rounded" value={formData.clientId} onChange={e => setFormData({...formData, clientId: e.target.value})} />
+              <input type="password" placeholder="Access Code" required className="w-full p-3 border rounded" value={formData.accessCode} onChange={e => setFormData({...formData, accessCode: e.target.value})} />
+            </>
+          )}
+          <button type="submit" className="w-full bg-slate-900 text-white p-3 rounded font-bold hover:bg-slate-800 transition-colors">Sign In</button>
+        </form>
+        <button onClick={() => setIsAsAdmin(!isAsAdmin)} className="w-full mt-4 text-sm text-gray-500">
+          {isAsAdmin ? 'Switch to Client Access' : 'Switch to Admin Login'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AdminDashboard({ clients, notifications }) {
   return (
     <div className="p-4 text-center">
       <h2 className="text-2xl font-bold mb-4 text-slate-800">Admin Dashboard</h2>
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
           <p className="text-xs text-slate-500 uppercase font-bold">Clients</p>
           <p className="text-2xl font-black text-slate-900">{clients.length}</p>
@@ -205,19 +216,18 @@ function AdminDashboard({ appSettings, clients, notifications, showToast }) {
           <p className="text-2xl font-black text-slate-900">{notifications.length}</p>
         </div>
       </div>
-      <p className="italic text-slate-400">Admin management console active.</p>
+      <p className="mt-8 italic text-slate-400">Admin management console active.</p>
     </div>
   );
 }
 
-function ClientDashboard({ client, notifications, showToast }) {
+function ClientDashboard({ client, notifications }) {
   return (
     <div className="p-4">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Hello, {client.name}</h2>
         <p className="text-slate-500">Client ID: {client.clientId}</p>
       </div>
-      
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <h3 className="font-bold text-slate-800 mb-4 flex items-center">
           <Bell size={18} className="mr-2 text-slate-900" />
