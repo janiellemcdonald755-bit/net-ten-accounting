@@ -3,12 +3,12 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
-  authDomain: "net-ten-accounting.firebaseapp.com",
-  projectId: "net-ten-accounting",
-  storageBucket: "net-ten-accounting.firebasestorage.app",
-  messagingSenderId: "1095937995425",
-  appId: "1:1095937995425:web:9d2089d7044a007e6336e0"
+  apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3krZE",
+  authDomain: "your-app.firebaseapp.com",
+  projectId: "your-app",
+  storageBucket: "your-app.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "your-app-id"
 };
 
 const app = initializeApp(firebaseConfig);
