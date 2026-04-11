@@ -117,10 +117,10 @@ export default function App() {
           <div className="flex items-center space-x-3">
             <img 
               src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" 
-              alt="NET TEN LTD Logo" 
-              className="w-10 h-10 object-contain bg-white rounded-full p-1"
-              style={{ width: '40px', height: '40px', minWidth: '40px' }}
-            />
+  alt="NET TEN LTD Logo" 
+  style={{ width: '40px', height: '40px', minWidth: '40px', objectFit: 'contain' }} 
+  className="bg-white rounded-full p-1"
+/>
             <h1 className="font-bold text-lg tracking-wider">NET TEN LTD</h1>
           </div>
           {session && (
@@ -129,7 +129,9 @@ export default function App() {
             </button>
           )}
         </div>
-      </header>
+      </header style={{ backgroundColor: '#0f172a', color: 'white', padding: '10px' }}
+  className="bg-slate-900 text-white sticky top-0 z-50 shadow-md"
+>
 
       {toast && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg text-sm flex items-center animate-in fade-in zoom-in duration-300">
