@@ -4,9 +4,9 @@ import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3krZE",
-  authDomain: "your-app.firebaseapp.com",
-  projectId: "your-app",
-  storageBucket: "your-app.appspot.com",
+  authDomain: "net-ten-accounting.firebaseapp.com",
+  projectId: "net-ten-accounting",
+  storageBucket: "net-ten-accounting.appspot.com",
   messagingSenderId: "123456789",
   appId: "your-app-id"
 };
