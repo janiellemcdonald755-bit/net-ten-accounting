@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './index.css';
+import '../index.css';
 import { auth, db } from './firebase';
 const appId = 'net-ten-accounting';
 import { 
