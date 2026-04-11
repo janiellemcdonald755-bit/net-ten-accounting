@@ -129,8 +129,7 @@ export default function App() {
             </button>
           )}
         </div>
-      <header
-        style={{ backgroundColor: '#0f172a', color: 'white', padding: '10px' }}
+      <header style={{ backgroundColor: '#0f172a', color: 'white', padding: '10px' }}
   className="bg-slate-900 text-white sticky top-0 z-50 shadow-md"
 >
 
