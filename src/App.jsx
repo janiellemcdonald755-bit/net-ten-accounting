@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import './firebase';
-import { initializeApp } from 'firebase/app';
+import { auth, db } from './firebase';
+const appId = 'net-ten-accounting';
 import { 
   getAuth, 
   signInWithCustomToken, 
@@ -23,12 +23,6 @@ import {
   X, Copy, PhoneCall, Loader2, Send, Info, Lock, MapPin, User
 } from 'lucide-react';
 
-// --- FIREBASE INITIALIZATION ---
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'net-ten-accounting';
 
 export default function App() {
   const [user, setUser] = useState(null);
