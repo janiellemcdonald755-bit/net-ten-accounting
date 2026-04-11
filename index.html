@@ -11,17 +11,53 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        function App() {
+        // --- YOUR ACTUAL APP CODE ---
+        const App = () => {
+            const [loading, setLoading] = React.useState(false);
+            const [transactions, setTransactions] = React.useState([]);
+
+            // Since we can't easily use Firebase in this simple HTML mode without more setup,
+            // let's put your UI here first to make sure it looks right!
+            
             return (
-                <div className="p-10">
-                    <h1 className="text-3xl font-bold text-blue-600">
-                        Success! The Old School Way Worked.
-                    </h1>
-                    <p className="mt-4">Net Ten Accounting is finally live.</p>
+                <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+                    <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h1 className="text-2xl font-bold text-gray-800">Net Ten Accounting</h1>
+                            <div className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">Live</div>
+                        </div>
+
+                        {/* Summary Card */}
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                                <p className="text-sm text-blue-600 font-medium">Income</p>
+                                <p className="text-xl font-bold text-blue-900">$0.00</p>
+                            </div>
+                            <div className="bg-red-50 p-4 rounded-lg">
+                                <p className="text-sm text-red-600 font-medium">Expenses</p>
+                                <p className="text-xl font-bold text-red-900">$0.00</p>
+                            </div>
+                        </div>
+
+                        {/* Transaction List Placeholder */}
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold text-gray-700">Recent Transactions</h2>
+                            <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+                                <p className="text-gray-500">No transactions yet. Ready to start accounting!</p>
+                            </div>
+                        </div>
+                        
+                        <button className="w-full mt-6 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">
+                            + Add Transaction
+                        </button>
+                    </div>
                 </div>
             );
-        }
+        };
 
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
