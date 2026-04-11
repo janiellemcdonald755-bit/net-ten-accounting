@@ -115,8 +115,8 @@ export default function App() {
       <header className="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
         <div className="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <img 
-              src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" 
+            <img
+  src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" 
   alt="NET TEN LTD Logo" 
   style={{ width: '40px', height: '40px', minWidth: '40px', objectFit: 'contain' }} 
   className="bg-white rounded-full p-1"
@@ -129,7 +129,8 @@ export default function App() {
             </button>
           )}
         </div>
-      </header style={{ backgroundColor: '#0f172a', color: 'white', padding: '10px' }}
+      <header
+        style={{ backgroundColor: '#0f172a', color: 'white', padding: '10px' }}
   className="bg-slate-900 text-white sticky top-0 z-50 shadow-md"
 >
 
