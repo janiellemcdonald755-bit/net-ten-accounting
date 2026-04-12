@@ -163,7 +163,6 @@ const App = () => {
                             </div>
                         ))}
 
-                        {/* EDIT MODAL */}
                         {editingClient && (
                             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
                                 <form onSubmit={(e) => {
@@ -182,12 +181,12 @@ const App = () => {
                                     <input name="phone" defaultValue={editingClient.phone} placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1">
-                                            <p className="text-[9px] font-bold text-slate-500 uppercase ml-1">Date Borrowed</p>
-                                            <input name="dateBorrowed" defaultValue={editingClient.dateBorrowed} placeholder="Date Borrowed" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Date Borrowed</p>
+                                            <input type="date" name="dateBorrowed" defaultValue={editingClient.dateBorrowed} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-[9px] font-bold text-slate-500 uppercase ml-1">Due Date</p>
-                                            <input name="datePaid" defaultValue={editingClient.datePaid} placeholder="Due Date" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Due Date</p>
+                                            <input type="date" name="datePaid" defaultValue={editingClient.datePaid} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
@@ -204,15 +203,20 @@ const App = () => {
                             </div>
                         )}
 
-                        {/* ADD FORM */}
                         {view === 'add' && (
                             <form onSubmit={addClient} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-4 text-left">
                                 <h2 className="text-xl font-black text-white italic uppercase">New Portfolio</h2>
                                 <input name="name" placeholder="Client Name" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" required />
                                 <input name="email" placeholder="Email Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" required />
                                 <div className="grid grid-cols-2 gap-3">
-                                    <input name="dateBorrowed" placeholder="Date Borrowed" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
-                                    <input name="datePaid" placeholder="Due Date" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Date Borrowed</p>
+                                        <input type="date" name="dateBorrowed" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Due Date</p>
+                                        <input type="date" name="datePaid" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <input name="amountOwed" type="number" step="any" placeholder="Balance $" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
@@ -232,7 +236,7 @@ const App = () => {
                         )}
                     </div>
                 ) : (
-                    /* CLIENT VIEW */
+                    /* CLIENT VIEW (Remains the same with full calendar meeting request) */
                     myPortfolio ? (
                         <div className="animate-in fade-in">
                             {myPortfolio.meetingRequest && (
@@ -295,21 +299,4 @@ const App = () => {
                                         ) : (
                                             <form onSubmit={scheduleMeeting} className="space-y-4">
                                                 <input type="date" name="meetingDate" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
-                                                <input type="time" name="meetingTime" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Request Meeting</button>
-                                                <button type="button" onClick={() => setShowCalendar(false)} className="w-full text-center text-slate-500 text-[10px] font-bold uppercase">Back</button>
-                                            </form>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : ( <div className="text-center p-12 bg-[#1e293b] rounded-3xl border border-slate-700 text-slate-500 font-medium">Profile not found.</div> )
-                )}
-            </main>
-        </div>
-    );
-};
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+                                                <input type
