@@ -16,153 +16,157 @@
 
     <script type="text/babel">
         // 1. CONFIG (Paste your real keys here!)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
-            authDomain: "net-ten-accounting.firebaseapp.com",
-            databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
-            projectId: "net-ten-accounting",
-            storageBucket: "net-ten-accounting.appspot.com",
-            messagingSenderId: "1095937995425",
-            appId: "1:1095937995425:web:9d2089d7044a007e6336e0"
-        };
+const firebaseConfig = {
+    apiKey: "YAIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
+    authDomain: "net-ten-accounting.firebaseapp.com",
+    databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
+    projectId: "net-ten-accounting",
+    storageBucket: "net-ten-accounting.appspot.com",
+    messagingSenderId: "1095937995425",
+    appId: "1:1095937995425:web:9d2089d7044a007e6336e0"
+};
 
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.database();
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-        const App = () => {
-            const [user, setUser] = React.useState(null);
-            const [view, setView] = React.useState('home'); 
-            const [clients, setClients] = React.useState([]);
-            
-            // Listen for user & data
-            React.useEffect(() => {
-                auth.onAuthStateChanged(u => setUser(u));
-                db.ref('clients').on('value', (snap) => {
-                    const data = snap.val();
-                    const list = [];
-                    if (data) Object.keys(data).forEach(k => list.push({id: k, ...data[k]}));
-                    setClients(list);
-                });
-            }, []);
+const App = () => {
+    const [user, setUser] = React.useState(null);
+    const [view, setView] = React.useState('home'); 
+    const [clients, setClients] = React.useState([]);
+    const [email, setEmail] = React.useState('');
+    const [password, setPassword] = React.useState('');
+    
+    // 1. CHANGE THIS TO YOUR ACTUAL LOGIN EMAIL
+    const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
 
-            const addClient = (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const newClient = Object.fromEntries(formData.entries());
-                db.ref('clients').push({
-                    ...newClient,
-                    amountOwed: parseFloat(newClient.amountOwed || 0),
-                    interest: parseFloat(newClient.interest || 0),
-                    dateAdded: Date.now()
-                });
-                e.target.reset();
-                alert("Client Saved!");
-            };
+    React.useEffect(() => {
+        auth.onAuthStateChanged(u => setUser(u));
+        db.ref('clients').on('value', (snap) => {
+            const data = snap.val();
+            const list = [];
+            if (data) Object.keys(data).forEach(k => list.push({id: k, ...data[k]}));
+            setClients(list);
+        });
+    }, []);
 
-            if (!user) return <div className="p-10 text-center font-bold">Please Login (See previous code for Login UI)</div>;
+    const handleLogin = (e) => {
+        e.preventDefault();
+        auth.signInWithEmailAndPassword(email, password).catch(err => alert(err.message));
+    };
 
-            return (
-                <div className="min-h-screen pb-24">
-                    {/* Top Header */}
-                    <header className="bg-white p-6 shadow-sm border-b flex justify-between items-center">
-                        <h1 className="text-xl font-black text-blue-600 italic">NET TEN ADMIN</h1>
-                        <button onClick={() => auth.signOut()} className="text-xs font-bold text-gray-400">Logout</button>
-                    </header>
+    const addClient = (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const newClient = Object.fromEntries(formData.entries());
+        db.ref('clients').push({
+            ...newClient,
+            amountOwed: parseFloat(newClient.amountOwed || 0),
+            interest: parseFloat(newClient.interest || 0),
+            dateAdded: Date.now()
+        });
+        e.target.reset();
+        alert("Client Saved!");
+    };
 
-                    <main className="p-4 max-w-lg mx-auto">
-                        {/* NAVIGATION TABS */}
-                        <div className="flex bg-gray-200 p-1 rounded-xl mb-6">
-                            <button onClick={() => setView('home')} className={`flex-1 py-2 rounded-lg text-sm font-bold ${view === 'home' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Clients</button>
-                            <button onClick={() => setView('admin')} className={`flex-1 py-2 rounded-lg text-sm font-bold ${view === 'admin' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Add New</button>
+    // --- VIEW: LOGIN ---
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6">
+                <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center">
+                    <h1 className="text-3xl font-black text-blue-600 mb-2">Net Ten</h1>
+                    <p className="text-gray-400 mb-8 font-medium">Secure Portal Access</p>
+                    <form onSubmit={handleLogin} className="space-y-4 text-left">
+                        <input type="email" placeholder="Email" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setEmail(e.target.value)} />
+                        <input type="password" placeholder="Password" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setPassword(e.target.value)} />
+                        <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg mt-2">Sign In</button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    const isAdmin = user.email === ADMIN_EMAIL;
+    const myPortfolio = clients.find(c => c.email?.toLowerCase() === user.email?.toLowerCase());
+
+    return (
+        <div className="min-h-screen pb-24 bg-slate-50">
+            {/* --- UNIVERSAL HEADER --- */}
+            <header className="sticky top-0 z-50 bg-white p-6 shadow-md border-b flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">N10</div>
+                    <div>
+                        <h1 className="text-xl font-black text-slate-800 tracking-tighter leading-none">NET TEN</h1>
+                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Accounting</p>
+                    </div>
+                </div>
+                <button onClick={() => auth.signOut()} className="text-xl">🚪</button>
+            </header>
+
+            <main className="p-4 max-w-lg mx-auto mt-4">
+                {isAdmin ? (
+                    /* ADMIN VIEW */
+                    <div className="animate-in fade-in">
+                        <div className="flex bg-gray-200 p-1 rounded-2xl mb-6">
+                            <button onClick={() => setView('home')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${view === 'home' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Portfolios</button>
+                            <button onClick={() => setView('admin')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${view === 'admin' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Add New</button>
                         </div>
 
-                        {/* VIEW 1: CLIENT LIST */}
-                        {view === 'home' && (
-                            <div className="space-y-4">
-                                <h2 className="text-lg font-bold text-slate-800">Active Portfolios</h2>
-                                {clients.length === 0 ? <p className="text-gray-400 italic">No clients yet.</p> : 
-                                clients.map(c => {
-    // Calculate the total (e.g., $1000 + 10% = $1100)
-    const totalWithInterest = c.amountOwed + (c.amountOwed * (c.interest / 100));
-    
-    return (
-        <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4">
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                    <h3 className="font-bold text-slate-800 text-lg">{c.name}</h3>
-                    <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">{c.phone}</p>
-                </div>
-                <div className="text-right">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">Total to Pay</p>
-                    <p className="font-black text-xl text-green-600">${totalWithInterest.toFixed(2)}</p>
-                </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl">
-                <div className="text-center border-r">
-                    <p className="text-[9px] font-bold text-gray-400">LOAN</p>
-                    <p className="text-sm font-bold text-slate-700">${c.amountOwed.toFixed(2)}</p>
-                </div>
-                <div className="text-center border-r">
-                    <p className="text-[9px] font-bold text-gray-400">INTEREST</p>
-                    <p className="text-sm font-bold text-slate-700">{c.interest}%</p>
-                </div>
-                <div className="text-center">
-                    <p className="text-[9px] font-bold text-gray-400">DUE</p>
-                    <p className="text-sm font-bold text-red-500">{c.datePaid || 'TBD'}</p>
-                </div>
-            </div>
-            
-            <button 
-                onClick={() => {
-                    if(confirm(`Delete ${c.name}'s profile?`)) db.ref(`clients/${c.id}`).remove();
-                }}
-                className="w-full mt-4 py-2 text-[10px] font-bold text-red-300 hover:text-red-500 transition uppercase tracking-widest"
-            >
-                Remove Client Portfolio
-            </button>
-        </div>
-    );
-})
-
-                        {/* VIEW 2: ADMIN (ADD CLIENT) */}
-                        {view === 'admin' && (
-                            <form onSubmit={addClient} className="bg-white p-6 rounded-3xl shadow-xl border space-y-4 animate-in fade-in">
-                                <h2 className="text-xl font-bold text-slate-800 mb-2">Onboard New Client</h2>
-                                <input name="name" placeholder="Full Name" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500" required />
-                                <input name="email" type="email" placeholder="Email Address" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none" required />
-                                <input name="phone" placeholder="Phone Number" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none" />
-                                <textarea name="address" placeholder="Business Address" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none"></textarea>
-                                
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input name="amountOwed" type="number" placeholder="Amount Owed ($)" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none" required />
-                                    <input name="interest" type="number" placeholder="Interest %" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none" required />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 ml-2">DATE TAKEN</label>
-                                        <input name="dateTaken" type="date" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none mt-1" />
+                        {view === 'home' ? (
+                            clients.map(c => (
+                                <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4">
+                                    <h3 className="font-bold text-slate-800">{c.name}</h3>
+                                    <p className="text-xs text-gray-400 mb-3">{c.email}</p>
+                                    <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Owed</p>
+                                            <p className="font-black text-slate-700">${c.amountOwed.toFixed(2)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Interest</p>
+                                            <p className="font-black text-blue-600">{c.interest}%</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 ml-2">DATE PAID BACK</label>
-                                        <input name="datePaid" type="date" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none mt-1" />
-                                    </div>
+                                    <button onClick={() => {if(confirm("Delete?")) db.ref(`clients/${c.id}`).remove()}} className="text-[10px] text-red-300 mt-4 uppercase font-bold">Delete Profile</button>
                                 </div>
-
-                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition transform active:scale-95">
-                                    SAVE CLIENT PROFILE
-                                </button>
+                            ))
+                        ) : (
+                            <form onSubmit={addClient} className="bg-white p-6 rounded-3xl shadow-xl border space-y-4">
+                                <input name="name" placeholder="Full Name" className="w-full p-3 bg-slate-50 rounded-xl" required />
+                                <input name="email" type="email" placeholder="Client Email" className="w-full p-3 bg-slate-50 rounded-xl" required />
+                                <input name="phone" placeholder="Phone" className="w-full p-3 bg-slate-50 rounded-xl" />
+                                <textarea name="address" placeholder="Address" className="w-full p-3 bg-slate-50 rounded-xl"></textarea>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input name="amountOwed" type="number" placeholder="Principal $" className="w-full p-3 bg-slate-50 rounded-xl" required />
+                                    <input name="interest" type="number" placeholder="Interest %" className="w-full p-3 bg-slate-50 rounded-xl" required />
+                                </div>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg">SAVE PROFILE</button>
                             </form>
                         )}
-                    </main>
-                </div>
-            );
-        };
+                    </div>
+                ) : (
+                    /* CLIENT VIEW */
+                    myPortfolio ? (
+                        <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-8 border-blue-600 text-center">
+                            <p className="text-gray-400 font-bold text-xs uppercase mb-6">Welcome, {myPortfolio.name}</p>
+                            <p className="text-sm font-bold text-slate-500 mb-1">Total Balance</p>
+                            <h2 className="text-5xl font-black text-slate-800 mb-6">
+                                ${(myPortfolio.amountOwed + (myPortfolio.amountOwed * (myPortfolio.interest/100))).toFixed(2)}
+                            </h2>
+                            <div className="grid grid-cols-2 gap-4 border-t pt-6 text-left">
+                                <div><p className="text-[10px] font-bold text-gray-400 uppercase">Principal</p><p className="font-bold">${myPortfolio.amountOwed.toFixed(2)}</p></div>
+                                <div className="text-right"><p className="text-[10px] font-bold text-gray-400 uppercase">Rate</p><p className="font-bold text-blue-600">{myPortfolio.interest}%</p></div>
+                            </div>
+                        </div>
+                    ) : <p className="text-center text-gray-400 mt-20">Portfolio not found. Please contact Admin.</p>
+                )}
+            </main>
+        </div>
+    );
+};
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
     </script>
 </body>
 </html>
