@@ -32,63 +32,86 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
         // --- YOUR ACTUAL APP CODE ---
-       const App = () => {
+const App = () => {
+    // 1. Initialize with an empty array instead of null
     const [transactions, setTransactions] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
 
-    // This listens to your Firebase Database in real-time!
     React.useEffect(() => {
-        const unsubscribe = db.collection('transactions')
-            .onSnapshot((snapshot) => {
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setTransactions(data);
-                setLoading(false);
-            });
-        return () => unsubscribe();
+        console.log("Starting Firebase listener...");
+        try {
+            const unsubscribe = db.collection('transactions')
+                .onSnapshot((snapshot) => {
+                    console.log("Data received from Firebase!");
+                    const data = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    setTransactions(data);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Firebase Error:", error);
+                    setLoading(false);
+                });
+            return () => unsubscribe();
+        } catch (err) {
+            console.error("Setup Error:", err);
+            setLoading(false);
+        }
     }, []);
 
-    // Logic to calculate totals
+    // Logic to calculate totals (Safely handle missing numbers)
     const totalIncome = transactions
         .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
     const totalExpense = transactions
         .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    if (loading) return <div className="p-10 text-center">Loading your books...</div>;
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-            <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-6">
-                <h1 className="text-2xl font-bold mb-6">Net Ten Accounting</h1>
-
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-sm text-blue-600 font-medium">Income</p>
-                        <p className="text-xl font-bold text-blue-900">${totalIncome.toFixed(2)}</p>
+        <div className="min-h-screen bg-gray-100 p-4">
+            <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6">
+                <h1 className="text-2xl font-bold text-gray-800 mb-4">Net Ten Accounting</h1>
+                
+                {loading ? (
+                    <div className="py-10 text-center text-blue-500 animate-pulse">
+                        Connecting to Database...
                     </div>
-                    <div className="bg-red-50 p-4 rounded-lg">
-                        <p className="text-sm text-red-600 font-medium">Expenses</p>
-                        <p className="text-xl font-bold text-red-900">${totalExpense.toFixed(2)}</p>
-                    </div>
-                </div>
-
-                <div className="space-y-2">
-                    <h2 className="text-lg font-semibold">Transactions</h2>
-                    {transactions.length === 0 ? (
-                        <p className="text-gray-500 italic">No records yet.</p>
-                    ) : (
-                        transactions.map(t => (
-                            <div key={t.id} className="flex justify-between p-2 border-b">
-                                <span>{t.name}</span>
-                                <span className={t.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                                    {t.type === 'income' ? '+' : '-'}${Number(t.amount).toFixed(2)}
-                                </span>
+                ) : (
+                    <React.Fragment>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                            <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                <p className="text-sm text-green-600 font-bold uppercase">Income</p>
+                                <p className="text-2xl font-black text-green-700">${totalIncome.toFixed(2)}</p>
                             </div>
+                            <div className="bg-red-50 p-4 rounded-lg border border-red-100">
+                                <p className="text-sm text-red-600 font-bold uppercase">Expenses</p>
+                                <p className="text-2xl font-black text-red-700">${totalExpense.toFixed(2)}</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h3 className="font-bold text-gray-700 border-b pb-2">Recent Activity</h3>
+                            {transactions.length === 0 ? (
+                                <p className="text-gray-400 italic py-4">No transactions found in Firestore.</p>
+                            ) : (
+                                transactions.map(t => (
+                                    <div key={t.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                        <span className="font-medium">{t.name || 'Unnamed'}</span>
+                                        <span className={t.type === 'income' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                                            {t.type === 'income' ? '+' : '-'}${Number(t.amount || 0).toFixed(2)}
+                                        </span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </React.Fragment>
+                )}
+            </div>
+        </div>
+    );
+};
                         ))
                     )}
                 </div>
