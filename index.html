@@ -42,7 +42,7 @@ const App = () => {
     const [editingClient, setEditingClient] = React.useState(null);
 
     const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
-    const ADMIN_PHONE = "1-876-519-7700/1-876-318-0099"; 
+    const ADMIN_PHONE = "1-876-318-0099/1-876-519-7700"; 
     const APP_URL = window.location.href;
 
     React.useEffect(() => {
@@ -236,7 +236,6 @@ const App = () => {
                         )}
                     </div>
                 ) : (
-                    /* CLIENT VIEW (Remains the same with full calendar meeting request) */
                     myPortfolio ? (
                         <div className="animate-in fade-in">
                             {myPortfolio.meetingRequest && (
@@ -289,7 +288,7 @@ const App = () => {
 
                             {showPayModal && (
                                 <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-[#0f172a]/90 backdrop-blur-sm">
-                                    <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 text-left shadow-2xl animate-in slide-in-from-bottom-10">
+                                    <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 text-left shadow-2xl">
                                         <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-white uppercase italic">Payment</h3><button onClick={() => {setShowPayModal(false); setShowCalendar(false)}} className="text-slate-500 text-2xl font-bold">×</button></div>
                                         {!showCalendar ? (
                                             <div className="space-y-4">
@@ -299,4 +298,21 @@ const App = () => {
                                         ) : (
                                             <form onSubmit={scheduleMeeting} className="space-y-4">
                                                 <input type="date" name="meetingDate" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
-                                                <input type
+                                                <input type="time" name="meetingTime" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Request Meeting</button>
+                                                <button type="button" onClick={() => setShowCalendar(false)} className="w-full text-center text-slate-500 text-[10px] font-bold uppercase">Back</button>
+                                            </form>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        ) : ( <div className="text-center p-12 bg-[#1e293b] rounded-3xl border border-slate-700 text-slate-500 font-medium">Profile not found.</div> )
+                    )
+                )}
+            </main>
+        </div>
+    );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
