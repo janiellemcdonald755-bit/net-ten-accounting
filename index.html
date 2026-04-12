@@ -94,9 +94,9 @@ const App = () => {
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-[#0f172a]">
-                <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border border-slate-700 animate-in fade-in zoom-in-95">
+                <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border border-slate-700">
                     <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" />
-                    <h1 className="text-3xl font-black text-blue-400 mb-6 uppercase tracking-tighter italic">Net Ten</h1>
+                    <h1 className="text-3xl font-black text-blue-400 mb-6 uppercase tracking-tighter italic leading-none">Net Ten</h1>
                     <form onSubmit={handleLogin} className="space-y-4">
                         <input type="email" placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none focus:border-blue-500" onChange={e => setEmail(e.target.value)} />
                         <input type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none focus:border-blue-500" onChange={e => setPassword(e.target.value)} />
@@ -141,6 +141,7 @@ const App = () => {
                                     <div>
                                         <h3 className="font-black text-white text-lg leading-tight">{c.name}</h3>
                                         <p className="text-[10px] text-blue-400 font-bold uppercase">{c.phone || 'No Phone'}</p>
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase mt-1">Borrowed: {c.dateBorrowed || 'N/A'}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[10px] font-bold text-slate-500 uppercase leading-none">Owed</p>
@@ -156,13 +157,13 @@ const App = () => {
                                                 history: [...(c.history || []), {amount: parseFloat(amt), date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}]
                                             });
                                         }
-                                    }} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest">Record Pay</button>
-                                    <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest">Manage</button>
+                                    }} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[10px] uppercase">Record Pay</button>
+                                    <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[10px] uppercase">Manage</button>
                                 </div>
                             </div>
                         ))}
 
-                        {/* RESTORED EDIT MODAL */}
+                        {/* EDIT MODAL */}
                         {editingClient && (
                             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
                                 <form onSubmit={(e) => {
@@ -175,16 +176,25 @@ const App = () => {
                                     });
                                     setEditingClient(null); alert("Updated!");
                                 }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 shadow-2xl space-y-3 text-left overflow-y-auto max-h-[90vh]">
-                                    <h3 className="text-xl font-black text-white uppercase italic mb-2">Edit Portfolio</h3>
+                                    <h3 className="text-xl font-black text-white uppercase italic">Edit Portfolio</h3>
                                     <input name="name" defaultValue={editingClient.name} placeholder="Name" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
                                     <input name="email" defaultValue={editingClient.email} placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
                                     <input name="phone" defaultValue={editingClient.phone} placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                    <textarea name="address" defaultValue={editingClient.address} placeholder="Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none h-20" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase ml-1">Date Borrowed</p>
+                                            <input name="dateBorrowed" defaultValue={editingClient.dateBorrowed} placeholder="Date Borrowed" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase ml-1">Due Date</p>
+                                            <input name="datePaid" defaultValue={editingClient.datePaid} placeholder="Due Date" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <input name="amountOwed" type="number" step="any" defaultValue={editingClient.amountOwed} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
                                         <input name="interest" type="number" step="any" defaultValue={editingClient.interest} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
                                     </div>
-                                    <input name="datePaid" defaultValue={editingClient.datePaid} placeholder="Due Date (e.g. Apr 15)" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                    <textarea name="address" defaultValue={editingClient.address} placeholder="Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none h-16" />
                                     <div className="flex gap-2 pt-2">
                                         <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Save</button>
                                         <button type="button" onClick={() => {if(confirm("Delete?")){db.ref(`clients/${editingClient.id}`).remove(); setEditingClient(null);}}} className="px-5 bg-red-900/20 text-red-500 rounded-2xl font-bold text-[10px]">DEL</button>
@@ -194,25 +204,27 @@ const App = () => {
                             </div>
                         )}
 
-                        {/* RESTORED ADD FORM */}
+                        {/* ADD FORM */}
                         {view === 'add' && (
-                            <form onSubmit={addClient} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-4 text-left animate-in slide-in-from-bottom-4 shadow-2xl">
-                                <h2 className="text-xl font-black text-white italic uppercase mb-2">New Portfolio</h2>
+                            <form onSubmit={addClient} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-4 text-left">
+                                <h2 className="text-xl font-black text-white italic uppercase">New Portfolio</h2>
                                 <input name="name" placeholder="Client Name" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" required />
                                 <input name="email" placeholder="Email Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" required />
-                                <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
-                                <textarea name="address" placeholder="Home Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white h-20"></textarea>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input name="dateBorrowed" placeholder="Date Borrowed" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                    <input name="datePaid" placeholder="Due Date" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <input name="amountOwed" type="number" step="any" placeholder="Balance $" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
                                     <input name="interest" type="number" step="any" placeholder="Interest %" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
                                 </div>
-                                <input name="datePaid" placeholder="Due Date (e.g. Every Friday)" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
-                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase tracking-widest mt-2">Create Profile</button>
+                                <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase tracking-widest">Create Profile</button>
                             </form>
                         )}
 
                         {view === 'share' && (
-                            <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700 text-center shadow-2xl animate-in zoom-in-95">
+                            <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700 text-center shadow-2xl">
                                 <h2 className="text-2xl font-black text-white uppercase italic mb-6">Share App</h2>
                                 <div className="bg-white p-4 rounded-[32px] inline-block mb-6 shadow-xl"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(APP_URL)}`} className="w-48 h-48 rounded-xl" /></div>
                                 <button onClick={() => {navigator.clipboard.writeText(APP_URL); alert("Copied!")}} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-xs">Copy Link</button>
@@ -227,7 +239,7 @@ const App = () => {
                                 <div className="bg-blue-600 p-3 rounded-2xl mb-4 flex items-center gap-3 shadow-lg border border-blue-400/30">
                                     <span className="text-xl">📅</span>
                                     <div className="text-left">
-                                        <p className="text-[9px] font-black text-blue-100 uppercase tracking-widest leading-none">Upcoming Meeting</p>
+                                        <p className="text-[9px] font-black text-blue-100 uppercase tracking-widest leading-none">Meeting Request</p>
                                         <p className="text-sm font-black text-white">{myPortfolio.meetingRequest}</p>
                                     </div>
                                 </div>
@@ -240,16 +252,16 @@ const App = () => {
 
                             {activeClientTab === 'dash' ? (
                                 <div className="text-center">
-                                    <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl border border-slate-700 mb-6 relative overflow-hidden">
+                                    <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl border border-slate-700 mb-6 relative overflow-hidden text-center">
                                         <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
-                                        <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-16 h-16 mx-auto mb-4" />
                                         <p className="text-slate-500 font-bold text-xs uppercase mb-1 tracking-widest">Balance Owed</p>
                                         <h2 className="text-5xl font-black text-white mb-8 tracking-tighter italic leading-none">${(myPortfolio.amountOwed + (myPortfolio.amountOwed * (myPortfolio.interest / 100))).toFixed(2)}</h2>
                                         <button onClick={() => setShowPayModal(true)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase text-sm">Make a Payment</button>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-[#1e293b] p-4 rounded-3xl border border-slate-700 text-left"><p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Rate</p><p className="font-black text-blue-400">{myPortfolio.interest}%</p></div>
-                                        <div className="bg-[#1e293b] p-4 rounded-3xl border border-slate-700 text-left"><p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Due Date</p><p className="font-black text-red-400 uppercase text-xs">{myPortfolio.datePaid || 'TBD'}</p></div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="bg-[#1e293b] p-3 rounded-2xl border border-slate-700 text-left"><p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Rate</p><p className="font-black text-blue-400 text-xs">{myPortfolio.interest}%</p></div>
+                                        <div className="bg-[#1e293b] p-3 rounded-2xl border border-slate-700 text-left"><p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Started</p><p className="font-black text-white text-[10px] uppercase">{myPortfolio.dateBorrowed || 'N/A'}</p></div>
+                                        <div className="bg-[#1e293b] p-3 rounded-2xl border border-slate-700 text-left"><p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Due</p><p className="font-black text-red-400 text-[10px] uppercase">{myPortfolio.datePaid || 'TBD'}</p></div>
                                     </div>
                                 </div>
                             ) : (
@@ -277,14 +289,14 @@ const App = () => {
                                         <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-white uppercase italic">Payment</h3><button onClick={() => {setShowPayModal(false); setShowCalendar(false)}} className="text-slate-500 text-2xl font-bold">×</button></div>
                                         {!showCalendar ? (
                                             <div className="space-y-4">
-                                                <div className="p-4 bg-[#0f172a] rounded-2xl border border-slate-700"><p className="font-bold text-blue-400 text-xs uppercase">Option 1: Bank Transfer</p><p className="text-sm text-slate-400">Request account details via text.</p></div>
+                                                <div className="p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-sm font-medium text-slate-400">Request bank details via text for transfer.</div>
                                                 <button onClick={() => setShowCalendar(true)} className="w-full p-4 bg-blue-900/10 rounded-2xl border border-blue-800 text-left"><p className="font-bold text-blue-400 text-xs uppercase">Option 2: Meet Winston</p><p className="text-sm text-slate-400 font-medium tracking-tight">Select a date (Time Optional).</p></button>
                                             </div>
                                         ) : (
-                                            <form onSubmit={scheduleMeeting} className="space-y-4 animate-in slide-in-from-right-4">
-                                                <div><p className="text-[10px] font-black text-blue-400 uppercase mb-2 tracking-widest">1. Date *</p><input type="date" name="meetingDate" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required /></div>
-                                                <div><p className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">2. Time (Optional)</p><input type="time" name="meetingTime" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" /></div>
-                                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Submit Request</button>
+                                            <form onSubmit={scheduleMeeting} className="space-y-4">
+                                                <input type="date" name="meetingDate" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
+                                                <input type="time" name="meetingTime" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Request Meeting</button>
                                                 <button type="button" onClick={() => setShowCalendar(false)} className="w-full text-center text-slate-500 text-[10px] font-bold uppercase">Back</button>
                                             </form>
                                         )}
