@@ -42,7 +42,7 @@ const App = () => {
     const [editingClient, setEditingClient] = React.useState(null);
 
     const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
-    const ADMIN_PHONE = "1-876-318-0099/1-876-519-7700"; 
+    const ADMIN_PHONE = "1-876-519-7700"; 
     const APP_URL = window.location.href;
 
     React.useEffect(() => {
@@ -305,8 +305,10 @@ const App = () => {
                                         )}
                                     </div>
                                 </div>
-                            )
-                        ) : ( <div className="text-center p-12 bg-[#1e293b] rounded-3xl border border-slate-700 text-slate-500 font-medium">Profile not found.</div> )
+                            )}
+                        </div>
+                    ) : (
+                        <div className="text-center p-12 bg-[#1e293b] rounded-3xl border border-slate-700 text-slate-500 font-medium">Profile not found.</div>
                     )
                 )}
             </main>
