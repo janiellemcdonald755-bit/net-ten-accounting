@@ -4,6 +4,7 @@
     <title>Net Ten Accounting</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,7 +14,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // Your Firebase Config
+        // 1. YOUR CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
             authDomain: "net-ten-accounting.firebaseapp.com",
@@ -24,104 +25,101 @@
             appId: "1:1095937995425:web:9d2089d7044a007e6336e0"
         };
 
-        // Initialize Firebase
+        // 2. INITIALIZE
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const database = firebase.database();
 
-       const App = () => {
-    const [transactions, setTransactions] = React.useState([]);
-    const [loading, setLoading] = React.useState(true);
-    
-    // Form States
-    const [name, setName] = React.useState('');
-    const [amount, setAmount] = React.useState('');
+        // 3. THE APP
+        const App = () => {
+            const [transactions, setTransactions] = React.useState([]);
+            const [loading, setLoading] = React.useState(true);
+            const [name, setName] = React.useState('');
+            const [amount, setAmount] = React.useState('');
 
-    React.useEffect(() => {
-        const dbRef = database.ref('transactions'); // We'll move data to a 'transactions' list
-        dbRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            const list = [];
-            if (data) {
-                // Convert the object from Firebase into an array we can map over
-                Object.keys(data).forEach(key => {
-                    list.push({ id: key, ...data[key] });
+            React.useEffect(() => {
+                const dbRef = database.ref('transactions');
+                dbRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    const list = [];
+                    if (data) {
+                        Object.keys(data).forEach(key => {
+                            list.push({ id: key, ...data[key] });
+                        });
+                    }
+                    setTransactions(list);
+                    setLoading(false);
                 });
-            }
-            setTransactions(list);
-            setLoading(false);
-        });
-        return () => dbRef.off();
-    }, []);
+                return () => dbRef.off();
+            }, []);
 
-    const handleAdd = (e) => {
-        e.preventDefault();
-        if (!name || !amount) return;
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!name || !amount) return;
+                database.ref('transactions').push({
+                    name: name,
+                    amount: parseFloat(amount),
+                    type: 'income',
+                    date: Date.now()
+                });
+                setName('');
+                setAmount('');
+            };
 
-        // This sends the data to your Realtime Database!
-        database.ref('transactions').push({
-            name: name,
-            amount: parseFloat(amount),
-            type: 'income',
-            date: Date.now()
-        });
+            const totalIncome = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
 
-        // Clear the form
-        setName('');
-        setAmount('');
-    };
+            return (
+                <div className="min-h-screen bg-gray-100 p-4">
+                    <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6 mt-10">
+                        <h1 className="text-2xl font-bold mb-6 text-gray-800">Net Ten Accounting</h1>
+                        
+                        <div className="bg-green-50 p-4 rounded-lg mb-6 border border-green-200 text-center">
+                            <p className="text-green-600 font-bold uppercase text-xs">Total Income</p>
+                            <p className="text-4xl font-black text-green-700">${totalIncome.toFixed(2)}</p>
+                        </div>
 
-    const totalIncome = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
-
-    return (
-        <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-            <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6">
-                <h1 className="text-2xl font-bold mb-6 text-gray-800">Net Ten Accounting</h1>
-                
-                <div className="bg-green-50 p-4 rounded-lg mb-6 border border-green-200">
-                    <p className="text-green-600 font-bold uppercase text-xs">Total Income</p>
-                    <p className="text-3xl font-black text-green-700">${totalIncome.toFixed(2)}</p>
-                </div>
-
-                {/* --- NEW FORM START --- */}
-                <form onSubmit={handleAdd} className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 className="text-sm font-bold text-gray-600 mb-3 uppercase">Add New Transaction</h3>
-                    <div className="space-y-3">
-                        <input 
-                            type="text" 
-                            placeholder="Description (e.g. Client Payment)" 
-                            className="w-full p-2 border rounded"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-                        <input 
-                            type="number" 
-                            placeholder="Amount ($)" 
-                            className="w-full p-2 border rounded"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                        />
-                        <button type="submit" className="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 transition">
-                            Add Income +
-                        </button>
-                    </div>
-                </form>
-                {/* --- NEW FORM END --- */}
-
-                <div className="space-y-2">
-                    <h3 className="font-bold border-b pb-2 text-gray-700">Recent Activity</h3>
-                    {loading ? <p>Loading...</p> : (
-                        transactions.length === 0 ? <p className="text-gray-400 italic py-4 text-center">No transactions yet.</p> :
-                        transactions.map(t => (
-                            <div key={t.id} className="flex justify-between p-3 bg-white border rounded shadow-sm">
-                                <span className="font-medium text-gray-700">{t.name}</span>
-                                <span className="text-green-600 font-bold">+${Number(t.amount).toFixed(2)}</span>
+                        <form onSubmit={handleAdd} className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="space-y-3">
+                                <input 
+                                    type="text" 
+                                    placeholder="Source (e.g. Salary)" 
+                                    className="w-full p-2 border rounded"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                />
+                                <input 
+                                    type="number" 
+                                    placeholder="Amount" 
+                                    className="w-full p-2 border rounded"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                />
+                                <button type="submit" className="w-full bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700">
+                                    Add Entry
+                                </button>
                             </div>
-                        ))
-                    )}
+                        </form>
+
+                        <div className="space-y-2">
+                            <h3 className="font-bold border-b pb-2 text-gray-700">History</h3>
+                            {loading ? <p>Loading...</p> : 
+                             transactions.length === 0 ? <p className="text-gray-400 py-4 text-center italic">No transactions yet.</p> :
+                             transactions.map(t => (
+                                <div key={t.id} className="flex justify-between p-3 bg-white border rounded shadow-sm">
+                                    <span className="font-medium">{t.name}</span>
+                                    <span className="text-green-600 font-bold">+${Number(t.amount).toFixed(2)}</span>
+                                </div>
+                             ))
+                            }
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    );
-};
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
