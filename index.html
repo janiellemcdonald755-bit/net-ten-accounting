@@ -38,7 +38,8 @@ const App = () => {
     const [password, setPassword] = React.useState('');
     
     // THE BOSS EMAIL
-    const ADMIN_EMAIL = "Winstonhmcdonald@gmail.com"; 
+   // CHANGE THIS TO THE NEW ADMIN EMAIL
+const ADMIN_EMAIL = "winstonhmcdonald@gmail.com";
 
     React.useEffect(() => {
         auth.onAuthStateChanged(u => setUser(u));
