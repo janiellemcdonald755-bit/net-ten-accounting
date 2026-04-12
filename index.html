@@ -14,6 +14,23 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // Paste your Firebase keys here! 
+// (You can find these in your Firebase Project Settings)
+const firebaseConfig = {
+  apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
+  authDomain: "net-ten-accounting.firebaseapp.com",
+  projectId: "net-ten-accounting",
+  storageBucket: "net-ten-accounting.appspot.com",
+  messagingSenderId: "1095937995425",
+  appId: "1:1095937995425:web:9d2089d7044a007e6336e0"
+};
+
+// This "activates" the connection
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
         // --- YOUR ACTUAL APP CODE ---
         const App = () => {
             const [loading, setLoading] = React.useState(false);
