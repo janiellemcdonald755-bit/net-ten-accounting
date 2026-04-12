@@ -37,17 +37,19 @@ const App = () => {
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     
-    // 1. CHANGE THIS TO YOUR ACTUAL LOGIN EMAIL
-    const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
+    // CHANGE THIS TO YOUR ACTUAL ADMIN EMAIL
+    const ADMIN_EMAIL = "Winstonhmcdonald@gmail.com"; 
 
     React.useEffect(() => {
         auth.onAuthStateChanged(u => setUser(u));
-        db.ref('clients').on('value', (snap) => {
+        const clientsRef = db.ref('clients');
+        clientsRef.on('value', (snap) => {
             const data = snap.val();
             const list = [];
             if (data) Object.keys(data).forEach(k => list.push({id: k, ...data[k]}));
             setClients(list);
         });
+        return () => clientsRef.off();
     }, []);
 
     const handleLogin = (e) => {
@@ -66,24 +68,24 @@ const App = () => {
             dateAdded: Date.now()
         });
         e.target.reset();
-        alert("Client Saved!");
+        alert("Client Saved Successfully!");
+        setView('home');
     };
 
-    // --- VIEW: LOGIN ---
     if (!user) {
         return (
-        <div className="flex items-center gap-3">
-    {/* Your Custom Logo */}
-    <img 
-        src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" 
-        className="w-12 h-12 object-contain rounded-lg" 
-        alt="Net Ten Logo" 
-    />
-    <div>
-        <h1 className="text-xl font-black text-slate-800 tracking-tighter leading-none">NET TEN</h1>
-        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest text-left">Accounting</p>
-    </div>
-</div>
+            <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+                <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center">
+                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" />
+                    <h1 className="text-3xl font-black text-blue-600 mb-2 tracking-tighter uppercase">Net Ten</h1>
+                    <p className="text-gray-400 mb-8 font-medium">Secure Portal Access</p>
+                    <form onSubmit={handleLogin} className="space-y-4 text-left">
+                        <input type="email" placeholder="Email" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setEmail(e.target.value)} />
+                        <input type="password" placeholder="Password" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setPassword(e.target.value)} />
+                        <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg mt-2">Sign In</button>
+                    </form>
+                </div>
+            </div>
         );
     }
 
@@ -92,72 +94,83 @@ const App = () => {
 
     return (
         <div className="min-h-screen pb-24 bg-slate-50">
-            {/* --- UNIVERSAL HEADER --- */}
+            {/* UNIVERSAL HEADER */}
             <header className="sticky top-0 z-50 bg-white p-6 shadow-md border-b flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">N10</div>
+                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-10 h-10 object-contain" />
                     <div>
-                        <h1 className="text-xl font-black text-slate-800 tracking-tighter leading-none">NET TEN</h1>
-                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Accounting</p>
+                        <h1 className="text-xl font-black text-slate-800 tracking-tighter leading-none text-left">NET TEN</h1>
+                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest text-left">Accounting</p>
                     </div>
                 </div>
-                <button onClick={() => auth.signOut()} className="text-xl">🚪</button>
+                <button onClick={() => auth.signOut()} className="text-xl p-2 bg-slate-50 rounded-full hover:bg-red-50 transition">🚪</button>
             </header>
 
             <main className="p-4 max-w-lg mx-auto mt-4">
                 {isAdmin ? (
                     /* ADMIN VIEW */
                     <div className="animate-in fade-in">
-                        <div className="flex bg-gray-200 p-1 rounded-2xl mb-6">
+                        <div className="flex bg-gray-200 p-1 rounded-2xl mb-6 shadow-inner">
                             <button onClick={() => setView('home')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${view === 'home' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Portfolios</button>
                             <button onClick={() => setView('admin')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${view === 'admin' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Add New</button>
                         </div>
 
-     {view === 'home' && (
-    <div className="space-y-4">
-        {clients.map(c => {
-            // Calculate Total Owed (Principal + Interest)
-            const principal = parseFloat(c.amountOwed) || 0;
-            const interestAmount = principal * (parseFloat(c.interest || 0) / 100);
-            const total = principal + interestAmount;
-
-            return (
-                <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4 animate-in fade-in">
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 className="font-bold text-slate-800 text-lg">{c.name}</h3>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{c.email}</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase">Total Owed</p>
-                            <p className="font-black text-xl text-green-600">${total.toFixed(2)}</p>
-                        </div>
+                        {view === 'home' ? (
+                            clients.map(c => (
+                                <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4 transition hover:shadow-md">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="font-bold text-slate-800 text-lg">{c.name}</h3>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Total Owed</p>
+                                            <p className="font-black text-lg text-green-600">${(c.amountOwed + (c.amountOwed * (c.interest/100))).toFixed(2)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl">
+                                        <div className="text-center border-r border-slate-200">
+                                            <p className="text-[8px] font-bold text-gray-400 uppercase leading-none mb-1">Balance Owed</p>
+                                            <p className="text-sm font-bold text-slate-700">${c.amountOwed.toFixed(2)}</p>
+                                        </div>
+                                        <div className="text-center border-r border-slate-200">
+                                            <p className="text-[8px] font-bold text-gray-400 uppercase leading-none mb-1">Interest</p>
+                                            <p className="text-sm font-bold text-blue-600">{c.interest}%</p>
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-[8px] font-bold text-gray-400 uppercase leading-none mb-1">Taken</p>
+                                            <p className="text-sm font-bold text-slate-700">{c.dateTaken || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-between mt-4">
+                                        <p className="text-[10px] text-red-400 font-bold uppercase tracking-tighter">Due: {c.datePaid || 'TBD'}</p>
+                                        <button onClick={() => {if(confirm("Delete Portfolio?")) db.ref(`clients/${c.id}`).remove()}} className="text-[10px] text-gray-300 hover:text-red-500 transition font-bold uppercase">Remove</button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <form onSubmit={addClient} className="bg-white p-6 rounded-3xl shadow-xl border space-y-4 animate-in slide-in-from-bottom-4">
+                                <h2 className="text-xl font-bold text-slate-800 mb-2 uppercase italic">Onboard Client</h2>
+                                <input name="name" placeholder="Full Name" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
+                                <input name="email" type="email" placeholder="Client Email" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input name="amountOwed" type="number" placeholder="Balance Owed $" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
+                                    <input name="interest" type="number" placeholder="Interest %" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div><label className="text-[10px] font-bold ml-2 text-gray-400 uppercase">Date Taken</label><input name="dateTaken" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
+                                    <div><label className="text-[10px] font-bold ml-2 text-gray-400 uppercase">Due Date</label><input name="datePaid" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
+                                </div>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase tracking-widest active:scale-95 transition">Save Profile</button>
+                            </form>
+                        )}
                     </div>
-                    
-                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl">
-                        <div className="text-center border-r border-slate-200">
-                            <p className="text-[9px] font-bold text-gray-400 uppercase">Principal</p>
-                            <p className="text-sm font-bold text-slate-700">${principal.toFixed(2)}</p>
-                        </div>
-                        <div className="text-center border-r border-slate-200">
-                            <p className="text-[9px] font-bold text-gray-400 uppercase">Interest</p>
-                            <p className="text-sm font-bold text-blue-600">{c.interest}%</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-[9px] font-bold text-gray-400 uppercase">Date Taken</p>
-                            <p className="text-sm font-bold text-slate-700">{c.dateTaken || 'No Date'}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between items-center mt-4 px-1">
-                        <p className="text-[10px] text-red-400 font-bold">DUE: {c.datePaid || 'Pending'}</p>
-                        <button onClick={() => {if(confirm("Delete Profile?")) db.ref(`clients/${c.id}`).remove()}} className="text-[10px] text-gray-300 hover:text-red-500 transition font-bold uppercase">Delete</button>
-                    </div>
-                </div>
-            );
-        })}
-    </div>
-)}
+                ) : (
+                    /* CLIENT VIEW */
+                    myPortfolio ? (
+                        <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-8 border-blue-600 text-center animate-in zoom-in-95">
+                            <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-16 h-16 mx-auto mb-4" />
+                            <p className="text-gray-400 font-bold text-xs uppercase mb-6 tracking-widest leading-none">Hello, {myPortfolio.name}</p>
+                            <p className="text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter">Current Total Owed</p>
+                            <h2 className="text-5xl font-black text-slate-800 mb-8 tracking-tighter">
+                                ${(myPortfolio.amountOwed + (myPortfolio.amountOwed * (
     </script>
 </body>
 </html>
