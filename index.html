@@ -117,27 +117,58 @@
                             </div>
                         )}
 
-                        {view === 'money' && (
-                            <div className="animate-in fade-in duration-500">
-                                {/* Your working accounting code goes here! */}
-                                <div className="bg-white p-6 rounded-3xl shadow-sm border mb-6">
-                                    <p className="text-sm font-bold text-gray-400">CURRENT BALANCE</p>
-                                    <h2 className="text-4xl font-black text-slate-800">$100.00</h2>
-                                </div>
-                                <button onClick={() => setView('home')} className="text-blue-600 font-bold mb-4">← Back to Home</button>
-                            </div>
-                        )}
-                    </main>
+    {view === 'money' && (
+    <div className="animate-in slide-in-from-right duration-300">
+        <button onClick={() => setView('home')} className="mb-6 text-sm font-bold text-blue-600 flex items-center">
+            ← Back to Dashboard
+        </button>
 
-                    {/* Bottom Nav Bar */}
-                    <nav className="fixed bottom-0 w-full bg-white/90 backdrop-blur-md border-t flex justify-around p-4 shadow-2xl">
-                        <button onClick={() => setView('home')} className={view === 'home' ? 'text-blue-600 font-bold' : 'text-gray-400'}>Home</button>
-                        <button onClick={() => setView('money')} className={view === 'money' ? 'text-blue-600 font-bold' : 'text-gray-400'}>Money</button>
-                        <button onClick={() => setView('profile')} className={view === 'profile' ? 'text-blue-600 font-bold' : 'text-gray-400'}>Profile</button>
-                    </nav>
+        {/* The Balance Card we perfected */}
+        <div className="bg-white rounded-3xl shadow-xl p-6 mb-6 border-t-4 border-blue-500">
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Current Balance</p>
+            <h2 className="text-4xl font-black text-slate-800">
+                ${transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0).toFixed(2)}
+            </h2>
+        </div>
+
+        {/* Quick Add Form */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border mb-6">
+            <h3 className="font-bold mb-4 text-slate-700">Add Transaction</h3>
+            <div className="flex gap-2 mb-4">
+                <input type="text" placeholder="Source" id="new-name" className="flex-1 p-3 bg-slate-50 rounded-xl outline-none" />
+                <input type="number" placeholder="0.00" id="new-amount" className="w-24 p-3 bg-slate-50 rounded-xl outline-none" />
+            </div>
+            <button 
+                onClick={() => {
+                    const n = document.getElementById('new-name').value;
+                    const a = document.getElementById('new-amount').value;
+                    if(n && a) {
+                        db.ref('transactions').push({ name: n, amount: parseFloat(a), type: 'income', date: Date.now() });
+                        document.getElementById('new-name').value = '';
+                        document.getElementById('new-amount').value = '';
+                    }
+                }}
+                className="w-full bg-green-600 text-white font-bold py-3 rounded-xl shadow-md"
+            >
+                Add Income +
+            </button>
+        </div>
+
+        {/* History List */}
+        <div className="space-y-3">
+            <h3 className="font-bold text-slate-700 px-2">History</h3>
+            {transactions.map(t => (
+                <div key={t.id} className="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border">
+                    <div>
+                        <p className="font-bold text-slate-800">{t.name}</p>
+                        <p className="text-[10px] text-slate-400 uppercase font-bold">{new Date(t.date).toLocaleDateString()}</p>
+                    </div>
+                    <span className="font-black text-green-600">+${t.amount.toFixed(2)}</span>
                 </div>
-            );
-        };
+            ))}
+        </div>
+    </div>
+)}
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
