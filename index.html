@@ -37,9 +37,8 @@ const App = () => {
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     
-    // THE BOSS EMAIL
-   // CHANGE THIS TO THE NEW ADMIN EMAIL
-const ADMIN_EMAIL = "winstonhmcdonald@gmail.com";
+    // NEW ADMIN EMAIL
+    const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
 
     React.useEffect(() => {
         auth.onAuthStateChanged(u => setUser(u));
@@ -108,7 +107,7 @@ const ADMIN_EMAIL = "winstonhmcdonald@gmail.com";
             <main className="p-4 max-w-lg mx-auto mt-4">
                 {isAdmin ? (
                     <div className="animate-in fade-in">
-                        <div className="flex bg-gray-200 p-1 rounded-2xl mb-6">
+                        <div className="flex bg-gray-200 p-1 rounded-2xl mb-6 shadow-inner">
                             <button onClick={() => setView('home')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${view === 'home' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Portfolios</button>
                             <button onClick={() => setView('admin')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest ${view === 'admin' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Add New</button>
                         </div>
@@ -117,38 +116,48 @@ const ADMIN_EMAIL = "winstonhmcdonald@gmail.com";
                             clients.map(c => (
                                 <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="font-bold text-slate-800">{c.name}</h3>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 text-lg">{c.name}</h3>
+                                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">{c.phone}</p>
+                                        </div>
                                         <div className="text-right">
                                             <p className="text-[10px] font-bold text-gray-400 uppercase">Total Owed</p>
                                             <p className="font-black text-lg text-green-600">${(c.amountOwed + (c.amountOwed * (c.interest/100))).toFixed(2)}</p>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl">
+                                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl mb-3">
                                         <div className="text-center border-r"><p className="text-[8px] font-bold text-gray-400 uppercase">Balance Owed</p><p className="text-sm font-bold text-slate-700">${c.amountOwed.toFixed(2)}</p></div>
                                         <div className="text-center border-r"><p className="text-[8px] font-bold text-gray-400 uppercase">Interest</p><p className="text-sm font-bold text-blue-600">{c.interest}%</p></div>
                                         <div className="text-center"><p className="text-[8px] font-bold text-gray-400 uppercase">Taken</p><p className="text-sm font-bold text-slate-700">{c.dateTaken || 'N/A'}</p></div>
                                     </div>
-                                    <button onClick={() => {if(confirm("Delete?")) db.ref(`clients/${c.id}`).remove()}} className="text-[10px] text-red-300 mt-4 uppercase font-bold">Remove</button>
+                                    <p className="text-[10px] text-gray-400 italic mb-3">{c.address}</p>
+                                    <div className="flex justify-between items-center border-t pt-3">
+                                        <p className="text-[10px] text-red-400 font-bold uppercase">Due: {c.datePaid || 'TBD'}</p>
+                                        <button onClick={() => {if(confirm("Delete Profile?")) db.ref(`clients/${c.id}`).remove()}} className="text-[10px] text-gray-300 hover:text-red-500 transition font-bold uppercase">Remove</button>
+                                    </div>
                                 </div>
                             ))
                         ) : (
                             <form onSubmit={addClient} className="bg-white p-6 rounded-3xl shadow-xl border space-y-4 animate-in slide-in-from-bottom-4">
+                                <h2 className="text-xl font-bold text-slate-800 mb-2 uppercase italic">Onboard Client</h2>
                                 <input name="name" placeholder="Full Name" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
                                 <input name="email" type="email" placeholder="Client Email" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
+                                <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" />
+                                <textarea name="address" placeholder="Physical Address" className="w-full p-4 bg-slate-50 rounded-2xl outline-none h-24 resize-none"></textarea>
                                 <div className="grid grid-cols-2 gap-3">
                                     <input name="amountOwed" type="number" placeholder="Balance Owed $" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
                                     <input name="interest" type="number" placeholder="Interest %" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div><label className="text-[10px] font-bold ml-2">DATE TAKEN</label><input name="dateTaken" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
-                                    <div><label className="text-[10px] font-bold ml-2">DUE DATE</label><input name="datePaid" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
+                                    <div><label className="text-[10px] font-bold ml-2 text-gray-400">DATE TAKEN</label><input name="dateTaken" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
+                                    <div><label className="text-[10px] font-bold ml-2 text-gray-400">DUE DATE</label><input name="datePaid" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
                                 </div>
                                 <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase">Save Profile</button>
                             </form>
                         )}
                     </div>
                 ) : (
-                    /* CLIENT VIEW (The section that had the error) */
+                    /* CLIENT VIEW */
                     myPortfolio ? (
                         <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-8 border-blue-600 text-center animate-in zoom-in-95">
                             <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-16 h-16 mx-auto mb-4" />
@@ -165,7 +174,7 @@ const ADMIN_EMAIL = "winstonhmcdonald@gmail.com";
                         </div>
                     ) : (
                         <div className="text-center p-12 bg-white rounded-3xl shadow border">
-                            <p className="text-gray-400 font-medium text-center">Portfolio not found for this email.</p>
+                            <p className="text-gray-400 font-medium">Portfolio not found.</p>
                         </div>
                     )
                 )}
