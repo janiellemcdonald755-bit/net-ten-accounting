@@ -106,16 +106,14 @@ const App = () => {
                                 ))
                             )}
                         </div>
+                        // ... (rest of your component code above)
+
                     </React.Fragment>
                 )}
             </div>
         </div>
-    );
-};
-                        ))
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
+    ); // This closes the return
+}; // This closes the App component
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
