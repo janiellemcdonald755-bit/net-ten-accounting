@@ -36,9 +36,10 @@ const App = () => {
     const [clients, setClients] = React.useState([]);
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
+    const [showPayModal, setShowPayModal] = React.useState(false);
     
-    // NEW ADMIN EMAIL
     const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
+    const ADMIN_PHONE = "1-876-3180-0099/1-876-519-7700"; // <--- Add your actual phone here
 
     React.useEffect(() => {
         auth.onAuthStateChanged(u => setUser(u));
@@ -65,6 +66,7 @@ const App = () => {
             ...newClient,
             amountOwed: parseFloat(newClient.amountOwed || 0),
             interest: parseFloat(newClient.interest || 0),
+            payments: [], 
             dateAdded: Date.now()
         });
         e.target.reset();
@@ -72,16 +74,30 @@ const App = () => {
         setView('home');
     };
 
+    const recordPayment = (clientId, currentBalance) => {
+        const amount = prompt("Enter payment amount received ($):");
+        if (!amount || isNaN(amount)) return;
+        
+        const newBalance = currentBalance - parseFloat(amount);
+        const date = new Date().toLocaleDateString();
+        
+        db.ref(`clients/${clientId}`).update({
+            amountOwed: newBalance
+        });
+        alert(`Payment of $${amount} recorded on ${date}. New balance: $${newBalance.toFixed(2)}`);
+    };
+
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-                <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center">
+                <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center border border-slate-100">
                     <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" />
-                    <h1 className="text-3xl font-black text-blue-600 mb-2 uppercase">Net Ten</h1>
-                    <form onSubmit={handleLogin} className="space-y-4 text-left mt-6">
+                    <h1 className="text-3xl font-black text-blue-600 mb-2 uppercase tracking-tighter">Net Ten</h1>
+                    <p className="text-gray-400 mb-8 font-medium">Secure Access</p>
+                    <form onSubmit={handleLogin} className="space-y-4 text-left">
                         <input type="email" placeholder="Email" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setEmail(e.target.value)} />
                         <input type="password" placeholder="Password" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setPassword(e.target.value)} />
-                        <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg">Sign In</button>
+                        <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg">SIGN IN</button>
                     </form>
                 </div>
             </div>
@@ -114,43 +130,41 @@ const App = () => {
 
                         {view === 'home' ? (
                             clients.map(c => (
-                                <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4">
-                                    <div className="flex justify-between items-center mb-4">
+                                <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4 transition hover:shadow-md">
+                                    <div className="flex justify-between items-start mb-4">
                                         <div>
                                             <h3 className="font-bold text-slate-800 text-lg">{c.name}</h3>
-                                            <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">{c.phone}</p>
+                                            <p className="text-[10px] text-blue-500 font-bold uppercase">{c.phone}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Total Owed</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Total Owed</p>
                                             <p className="font-black text-lg text-green-600">${(c.amountOwed + (c.amountOwed * (c.interest/100))).toFixed(2)}</p>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl mb-3">
-                                        <div className="text-center border-r"><p className="text-[8px] font-bold text-gray-400 uppercase">Balance Owed</p><p className="text-sm font-bold text-slate-700">${c.amountOwed.toFixed(2)}</p></div>
-                                        <div className="text-center border-r"><p className="text-[8px] font-bold text-gray-400 uppercase">Interest</p><p className="text-sm font-bold text-blue-600">{c.interest}%</p></div>
-                                        <div className="text-center"><p className="text-[8px] font-bold text-gray-400 uppercase">Taken</p><p className="text-sm font-bold text-slate-700">{c.dateTaken || 'N/A'}</p></div>
+                                    <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl mb-4 text-center">
+                                        <div><p className="text-[8px] font-bold text-gray-400">BALANCE</p><p className="text-sm font-bold">${c.amountOwed.toFixed(2)}</p></div>
+                                        <div><p className="text-[8px] font-bold text-gray-400">INT %</p><p className="text-sm font-bold text-blue-600">{c.interest}%</p></div>
+                                        <div><p className="text-[8px] font-bold text-gray-400">TAKEN</p><p className="text-sm font-bold">{c.dateTaken || 'N/A'}</p></div>
                                     </div>
-                                    <p className="text-[10px] text-gray-400 italic mb-3">{c.address}</p>
-                                    <div className="flex justify-between items-center border-t pt-3">
-                                        <p className="text-[10px] text-red-400 font-bold uppercase">Due: {c.datePaid || 'TBD'}</p>
-                                        <button onClick={() => {if(confirm("Delete Profile?")) db.ref(`clients/${c.id}`).remove()}} className="text-[10px] text-gray-300 hover:text-red-500 transition font-bold uppercase">Remove</button>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => recordPayment(c.id, c.amountOwed)} className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest">Record Payment</button>
+                                        <button onClick={() => {if(confirm("Delete Profile?")) db.ref(`clients/${c.id}`).remove()}} className="px-4 text-gray-300 hover:text-red-500 text-xs font-bold uppercase border rounded-xl">Del</button>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <form onSubmit={addClient} className="bg-white p-6 rounded-3xl shadow-xl border space-y-4 animate-in slide-in-from-bottom-4">
+                            <form onSubmit={addClient} className="bg-white p-6 rounded-3xl shadow-xl border space-y-4">
                                 <h2 className="text-xl font-bold text-slate-800 mb-2 uppercase italic">Onboard Client</h2>
                                 <input name="name" placeholder="Full Name" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
                                 <input name="email" type="email" placeholder="Client Email" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
                                 <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" />
-                                <textarea name="address" placeholder="Physical Address" className="w-full p-4 bg-slate-50 rounded-2xl outline-none h-24 resize-none"></textarea>
                                 <div className="grid grid-cols-2 gap-3">
                                     <input name="amountOwed" type="number" placeholder="Balance Owed $" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
                                     <input name="interest" type="number" placeholder="Interest %" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div><label className="text-[10px] font-bold ml-2 text-gray-400">DATE TAKEN</label><input name="dateTaken" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
-                                    <div><label className="text-[10px] font-bold ml-2 text-gray-400">DUE DATE</label><input name="datePaid" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
+                                    <input name="dateTaken" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" />
+                                    <input name="datePaid" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" />
                                 </div>
                                 <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase">Save Profile</button>
                             </form>
@@ -159,18 +173,61 @@ const App = () => {
                 ) : (
                     /* CLIENT VIEW */
                     myPortfolio ? (
-                        <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-8 border-blue-600 text-center animate-in zoom-in-95">
-                            <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-16 h-16 mx-auto mb-4" />
-                            <p className="text-gray-400 font-bold text-xs uppercase mb-6 tracking-widest">Hello, {myPortfolio.name}</p>
-                            <p className="text-sm font-bold text-slate-500 mb-1 uppercase">Current Total Owed</p>
-                            <h2 className="text-5xl font-black text-slate-800 mb-8 tracking-tighter">
-                                ${(myPortfolio.amountOwed + (myPortfolio.amountOwed * (myPortfolio.interest / 100))).toFixed(2)}
-                            </h2>
-                            <div className="grid grid-cols-3 gap-2 bg-slate-50 p-4 rounded-3xl text-left border border-slate-100">
-                                <div><p className="text-[9px] font-bold text-gray-400 uppercase">Balance Owed</p><p className="font-bold text-slate-700 text-sm">${myPortfolio.amountOwed.toFixed(2)}</p></div>
-                                <div><p className="text-[9px] font-bold text-gray-400 uppercase">Rate</p><p className="font-bold text-blue-600 text-sm">{myPortfolio.interest}%</p></div>
-                                <div><p className="text-[9px] font-bold text-gray-400 uppercase">Due</p><p className="font-bold text-red-500 text-[10px]">{myPortfolio.datePaid || 'TBD'}</p></div>
+                        <div className="animate-in zoom-in-95">
+                            <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-8 border-blue-600 text-center relative overflow-hidden">
+                                <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-16 h-16 mx-auto mb-4" />
+                                <p className="text-gray-400 font-bold text-xs uppercase mb-6 tracking-widest leading-none">Hello, {myPortfolio.name}</p>
+                                <p className="text-sm font-bold text-slate-500 mb-1 uppercase tracking-tighter leading-none">Total Balance Due</p>
+                                <h2 className="text-5xl font-black text-slate-800 mb-8 tracking-tighter">
+                                    ${(myPortfolio.amountOwed + (myPortfolio.amountOwed * (myPortfolio.interest / 100))).toFixed(2)}
+                                </h2>
+                                
+                                <div className="grid grid-cols-3 gap-2 bg-slate-50 p-4 rounded-3xl text-left border border-slate-100 mb-6">
+                                    <div><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Borrowed</p><p className="font-bold text-slate-700 text-sm">${myPortfolio.amountOwed.toFixed(2)}</p></div>
+                                    <div><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Rate</p><p className="font-bold text-blue-600 text-sm">{myPortfolio.interest}%</p></div>
+                                    <div><p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Due Date</p><p className="font-bold text-red-500 text-[10px] uppercase leading-none">{myPortfolio.datePaid || 'TBD'}</p></div>
+                                </div>
+
+                                <button 
+                                    onClick={() => setShowPayModal(true)}
+                                    className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg shadow-blue-200 uppercase tracking-widest text-sm hover:scale-[1.02] transition active:scale-95"
+                                >
+                                    Make a Payment
+                                </button>
                             </div>
+
+                            {/* PAYMENT INSTRUCTIONS MODAL */}
+                            {showPayModal && (
+                                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                                    <div className="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl animate-in slide-in-from-bottom-10">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Payment Options</h3>
+                                            <button onClick={() => setShowPayModal(false)} className="text-gray-400 text-2xl font-bold">×</button>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                <p className="font-bold text-blue-600 text-xs uppercase mb-1">Option 1: Bank Transfer</p>
+                                                <p className="text-sm text-slate-600 font-medium">Contact Admin for bank details and account info.</p>
+                                            </div>
+                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                                <p className="font-bold text-blue-600 text-xs uppercase mb-1">Option 2: Face-to-Face</p>
+                                                <p className="text-sm text-slate-600 font-medium">Schedule a meeting with the administrator at a convenient location.</p>
+                                            </div>
+                                            
+                                            <div className="pt-4 border-t border-dashed">
+                                                <p className="text-center text-[10px] font-bold text-gray-400 uppercase mb-4 tracking-widest">Contact Admin to Proceed</p>
+                                                <a href={`tel:${ADMIN_PHONE}`} className="flex items-center justify-center gap-3 bg-green-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-green-100 uppercase tracking-widest text-xs mb-3">
+                                                    📞 Call Winston
+                                                </a>
+                                                <a href={`mailto:${ADMIN_EMAIL}`} className="flex items-center justify-center gap-3 bg-slate-800 text-white font-black py-4 rounded-2xl shadow-lg shadow-slate-200 uppercase tracking-widest text-xs">
+                                                    ✉️ Email Admin
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="text-center p-12 bg-white rounded-3xl shadow border">
