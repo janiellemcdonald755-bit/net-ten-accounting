@@ -66,8 +66,7 @@ const App = () => {
             ...newClient,
             amountOwed: parseFloat(newClient.amountOwed || 0),
             interest: parseFloat(newClient.interest || 0),
-            notifications: [],
-            meetingRequest: null,
+            history: [], // For transaction history
             dateAdded: Date.now()
         });
         e.target.reset();
@@ -75,37 +74,46 @@ const App = () => {
         setView('home');
     };
 
-    const recordPayment = (clientId, currentBalance) => {
+    const recordPayment = (clientId, currentBalance, currentHistory = []) => {
         const amount = prompt("Enter payment amount ($):");
         if (!amount || isNaN(amount)) return;
-        const newBalance = currentBalance - parseFloat(amount);
-        db.ref(`clients/${clientId}`).update({ amountOwed: newBalance });
+        
+        const payVal = parseFloat(amount);
+        const newBalance = currentBalance - payVal;
+        const historyItem = {
+            amount: payVal,
+            date: new Date().toLocaleDateString(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        // Update balance and push to history array
+        const updatedHistory = Array.isArray(currentHistory) ? [...currentHistory, historyItem] : [historyItem];
+        
+        db.ref(`clients/${clientId}`).update({ 
+            amountOwed: newBalance,
+            history: updatedHistory
+        });
+        alert("Payment Recorded & History Updated!");
     };
 
-    const sendClientAlert = (clientId) => {
-        const msg = prompt("Enter message for client:");
-        if (msg) db.ref(`clients/${clientId}`).update({ adminMsg: msg });
-    };
-
-    const requestMeeting = (clientId) => {
-        const date = prompt("Enter preferred Date & Time (e.g. Monday 2pm):");
-        if (date) {
-            db.ref(`clients/${clientId}`).update({ meetingRequest: date });
-            alert("Request sent to Admin!");
-            setShowPayModal(false);
-        }
-    };
+    // --- CALCULATIONS FOR ADMIN SUMMARY ---
+    const totalPrincipal = clients.reduce((sum, c) => sum + (parseFloat(c.amountOwed) || 0), 0);
+    const totalWithInterest = clients.reduce((sum, c) => {
+        const principal = parseFloat(c.amountOwed) || 0;
+        const interest = principal * (parseFloat(c.interest || 0) / 100);
+        return sum + principal + interest;
+    }, 0);
 
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-                <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center">
+                <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center border">
                     <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" />
-                    <h1 className="text-3xl font-black text-blue-600 mb-2 uppercase">Net Ten</h1>
-                    <form onSubmit={handleLogin} className="space-y-4 text-left mt-6">
+                    <h1 className="text-3xl font-black text-blue-600 mb-6 uppercase tracking-tighter leading-none">Net Ten</h1>
+                    <form onSubmit={handleLogin} className="space-y-4 text-left">
                         <input type="email" placeholder="Email" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setEmail(e.target.value)} />
                         <input type="password" placeholder="Password" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setPassword(e.target.value)} />
-                        <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg">Sign In</button>
+                        <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg">SIGN IN</button>
                     </form>
                 </div>
             </div>
@@ -116,7 +124,7 @@ const App = () => {
     const myPortfolio = clients.find(c => c.email?.toLowerCase() === user.email?.toLowerCase());
 
     return (
-        <div className="min-h-screen pb-24 bg-slate-50 font-sans">
+        <div className="min-h-screen pb-24 bg-slate-50">
             <header className="sticky top-0 z-50 bg-white p-6 shadow-md border-b flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-10 h-10 object-contain" />
@@ -131,17 +139,31 @@ const App = () => {
             <main className="p-4 max-w-lg mx-auto mt-4">
                 {isAdmin ? (
                     <div className="animate-in fade-in">
-                        <div className="flex bg-gray-200 p-1 rounded-2xl mb-6">
+                        {/* ADMIN TOTALS CALCULATOR CARD */}
+                        <div className="bg-slate-900 text-white p-6 rounded-[32px] mb-6 shadow-xl relative overflow-hidden">
+                            <div className="relative z-10 flex justify-between items-center">
+                                <div className="text-left">
+                                    <p className="text-blue-400 font-bold text-[10px] uppercase tracking-widest mb-1">Portfolio Total Owed</p>
+                                    <h2 className="text-3xl font-black tracking-tighter">${totalWithInterest.toFixed(2)}</h2>
+                                    <p className="text-slate-400 text-[10px] mt-1 font-medium">Principal Sum: ${totalPrincipal.toFixed(2)}</p>
+                                </div>
+                                <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md font-bold text-xs">
+                                    {clients.length} Clients
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex bg-gray-200 p-1 rounded-2xl mb-6 shadow-inner">
                             <button onClick={() => setView('home')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase ${view === 'home' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Portfolios</button>
                             <button onClick={() => setView('admin')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase ${view === 'admin' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Add New</button>
                         </div>
 
                         {view === 'home' ? (
                             clients.map(c => (
-                                <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4">
+                                <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4 transition hover:shadow-md">
                                     {c.meetingRequest && (
-                                        <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl mb-4 flex justify-between items-center">
-                                            <p className="text-[10px] font-bold text-amber-700 uppercase">📅 Meeting Requested: {c.meetingRequest}</p>
+                                        <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl mb-4 flex justify-between items-center text-left">
+                                            <p className="text-[10px] font-bold text-amber-700 uppercase">📅 Meeting: {c.meetingRequest}</p>
                                             <button onClick={() => db.ref(`clients/${c.id}`).update({meetingRequest: null})} className="text-amber-900 font-bold text-xs">OK</button>
                                         </div>
                                     )}
@@ -151,34 +173,35 @@ const App = () => {
                                             <p className="text-[10px] text-blue-500 font-bold uppercase">{c.phone}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Total Owed</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Balance Owed</p>
                                             <p className="font-black text-lg text-green-600">${(c.amountOwed + (c.amountOwed * (c.interest/100))).toFixed(2)}</p>
                                         </div>
                                     </div>
-                                    <p className="text-[11px] text-gray-500 mb-3 text-left">📍 {c.address || 'No Address Listed'}</p>
+                                    <p className="text-[11px] text-gray-500 mb-4 text-left italic">📍 {c.address || 'No address listed'}</p>
                                     <div className="flex gap-2">
-                                        <button onClick={() => recordPayment(c.id, c.amountOwed)} className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold text-[10px] uppercase">Record Pay</button>
-                                        <button onClick={() => sendClientAlert(c.id)} className="flex-1 bg-blue-100 text-blue-700 py-3 rounded-xl font-bold text-[10px] uppercase">Notify</button>
+                                        <button onClick={() => recordPayment(c.id, c.amountOwed, c.history)} className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold text-[10px] uppercase">Record Pay</button>
+                                        <button onClick={() => {const m = prompt("Msg:"); if(m) db.ref(`clients/${c.id}`).update({adminMsg: m})}} className="flex-1 bg-blue-100 text-blue-700 py-3 rounded-xl font-bold text-[10px] uppercase">Notify</button>
                                         <button onClick={() => {if(confirm("Delete?")) db.ref(`clients/${c.id}`).remove()}} className="px-4 text-gray-300 border rounded-xl font-bold text-[10px]">DEL</button>
                                     </div>
                                 </div>
                             ))
                         ) : (
+                            /* ADD NEW FORM */
                             <form onSubmit={addClient} className="bg-white p-6 rounded-3xl shadow-xl border space-y-4">
                                 <h2 className="text-xl font-bold text-slate-800 text-left italic uppercase">Onboard Client</h2>
-                                <input name="name" placeholder="Full Name" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
-                                <input name="email" type="email" placeholder="Client Email" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
-                                <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" />
-                                <textarea name="address" placeholder="Physical Address" className="w-full p-4 bg-slate-50 rounded-2xl outline-none h-20 resize-none"></textarea>
+                                <input name="name" placeholder="Full Name" className="w-full p-4 bg-slate-50 rounded-2xl outline-none border focus:border-blue-500" required />
+                                <input name="email" type="email" placeholder="Client Email" className="w-full p-4 bg-slate-50 rounded-2xl outline-none border focus:border-blue-500" required />
+                                <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-slate-50 rounded-2xl outline-none border" />
+                                <textarea name="address" placeholder="Physical Address" className="w-full p-4 bg-slate-50 rounded-2xl outline-none border h-20 resize-none"></textarea>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <input name="amountOwed" type="number" placeholder="Balance Owed $" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
-                                    <input name="interest" type="number" placeholder="Interest %" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" required />
+                                    <input name="amountOwed" type="number" placeholder="Balance Owed $" className="w-full p-4 bg-slate-50 rounded-2xl outline-none border" required />
+                                    <input name="interest" type="number" placeholder="Interest %" className="w-full p-4 bg-slate-50 rounded-2xl outline-none border" required />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 text-left">
-                                    <div><label className="text-[9px] font-bold ml-2 text-gray-400 uppercase">Date Taken</label><input name="dateTaken" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
-                                    <div><label className="text-[9px] font-bold ml-2 text-gray-400 uppercase">Due Date</label><input name="datePaid" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none" /></div>
+                                    <div><label className="text-[9px] font-bold ml-2 text-gray-400 uppercase">Date Taken</label><input name="dateTaken" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none border" /></div>
+                                    <div><label className="text-[9px] font-bold ml-2 text-gray-400 uppercase">Due Date</label><input name="datePaid" type="date" className="w-full p-4 bg-slate-50 rounded-2xl outline-none border" /></div>
                                 </div>
-                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase">Save Profile</button>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase active:scale-95 transition">Save Profile</button>
                             </form>
                         )}
                     </div>
@@ -193,15 +216,36 @@ const App = () => {
                                     <button onClick={() => db.ref(`clients/${myPortfolio.id}`).update({adminMsg: null})} className="absolute top-3 right-4 font-black">✕</button>
                                 </div>
                             )}
-                            <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-8 border-blue-600 text-center relative overflow-hidden">
+                            <div className="bg-white p-8 rounded-[40px] shadow-2xl border-t-8 border-blue-600 text-center relative overflow-hidden mb-6">
                                 <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-16 h-16 mx-auto mb-4" />
-                                <p className="text-gray-400 font-bold text-xs uppercase mb-6 tracking-widest">Hello, {myPortfolio.name}</p>
+                                <p className="text-gray-400 font-bold text-xs uppercase mb-4 tracking-widest">Hello, {myPortfolio.name}</p>
                                 <h2 className="text-5xl font-black text-slate-800 mb-8 tracking-tighter">
                                     ${(myPortfolio.amountOwed + (myPortfolio.amountOwed * (myPortfolio.interest / 100))).toFixed(2)}
                                 </h2>
-                                <button onClick={() => setShowPayModal(true)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase tracking-widest text-sm">Make a Payment</button>
+                                <button onClick={() => setShowPayModal(true)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase text-sm active:scale-95 transition">Make a Payment</button>
                             </div>
 
+                            {/* TRANSACTION HISTORY LIST */}
+                            <div className="bg-white p-6 rounded-[32px] shadow-md border border-slate-100 text-left">
+                                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Payment History</h4>
+                                {myPortfolio.history && myPortfolio.history.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {myPortfolio.history.map((h, i) => (
+                                            <div key={i} className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                                <div>
+                                                    <p className="font-black text-slate-700 text-sm">-$ {h.amount.toFixed(2)}</p>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{h.date} • {h.time}</p>
+                                                </div>
+                                                <div className="text-[10px] font-black text-green-600 uppercase bg-green-50 px-3 py-1 rounded-full">Paid</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-300 text-sm italic py-4 text-center">No transactions yet.</p>
+                                )}
+                            </div>
+
+                            {/* MODAL (unchanged but integrated) */}
                             {showPayModal && (
                                 <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
                                     <div className="bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl text-left">
@@ -211,9 +255,12 @@ const App = () => {
                                                 <p className="font-bold text-blue-600 text-xs uppercase">Option 1: Bank Transfer</p>
                                                 <p className="text-sm text-slate-600">Contact Admin for bank details.</p>
                                             </div>
-                                            <button onClick={() => requestMeeting(myPortfolio.id)} className="w-full p-4 bg-blue-50 rounded-2xl border border-blue-200 text-left">
-                                                <p className="font-bold text-blue-600 text-xs uppercase">Option 2: Schedule Face-to-Face</p>
-                                                <p className="text-sm text-slate-600 font-medium">Click here to propose a date/time.</p>
+                                            <button onClick={() => {
+                                                const dt = prompt("Date & Time:");
+                                                if(dt) { db.ref(`clients/${myPortfolio.id}`).update({meetingRequest: dt}); alert("Sent!"); setShowPayModal(false); }
+                                            }} className="w-full p-4 bg-blue-50 rounded-2xl border border-blue-200 text-left">
+                                                <p className="font-bold text-blue-600 text-xs uppercase">Option 2: Face-to-Face</p>
+                                                <p className="text-sm text-slate-600 font-medium">Click to propose a time.</p>
                                             </button>
                                             <div className="pt-4 border-t border-dashed space-y-3">
                                                 <a href={`tel:${ADMIN_PHONE}`} className="flex items-center justify-center bg-green-500 text-white font-black py-4 rounded-2xl uppercase text-xs">📞 Call Winston</a>
