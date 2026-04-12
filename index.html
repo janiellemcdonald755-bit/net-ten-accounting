@@ -12,6 +12,37 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // --- Update the connection at the top ---
+const database = firebase.database(); // Use .database() instead of .firestore()
+
+// --- Update the App component's listener ---
+React.useEffect(() => {
+    console.log("Connecting to Realtime Database...");
+    
+    // This points to the "root" of your database since your data is right at the top
+    const dbRef = database.ref('/'); 
+    
+    dbRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        console.log("Data received:", data);
+        
+        if (data) {
+            // If your data is just one record like in the screenshot:
+            setTransactions([{
+                id: 'test-1',
+                name: data.name || 'Income',
+                amount: data.amount || 0,
+                type: 'income'
+            }]);
+        }
+        setLoading(false);
+    }, (error) => {
+        console.error("Database Error:", error);
+        setLoading(false);
+    });
+
+    return () => dbRef.off();
+}, []);
         // Paste your Firebase keys here! 
 // (You can find these in your Firebase Project Settings)
 const firebaseConfig = {
