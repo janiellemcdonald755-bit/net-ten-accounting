@@ -40,6 +40,7 @@ const App = () => {
     const [showCalendar, setShowCalendar] = React.useState(false);
     const [activeClientTab, setActiveClientTab] = React.useState('dash');
     const [editingClient, setEditingClient] = React.useState(null);
+    const [payingClient, setPayingClient] = React.useState(null);
 
     const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
     const ADMIN_PHONE = "1-876-519-7700"; 
@@ -78,6 +79,27 @@ const App = () => {
             e.target.reset();
             setView('home');
         } catch (err) { alert(err.message); }
+    };
+
+    const handleRecordPayment = (e) => {
+        e.preventDefault();
+        const amt = parseFloat(e.target.payAmt.value);
+        const date = e.target.payDate.value;
+        const method = e.target.payMethod.value;
+
+        if(!amt || !date) return alert("Fill in amount and date");
+
+        db.ref(`clients/${payingClient.id}`).update({
+            amountOwed: payingClient.amountOwed - amt,
+            history: [...(payingClient.history || []), {
+                amount: amt, 
+                date: date, 
+                method: method,
+                timestamp: Date.now()
+            }]
+        });
+        setPayingClient(null);
+        alert("Payment Recorded!");
     };
 
     const scheduleMeeting = (e) => {
@@ -149,19 +171,36 @@ const App = () => {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-4">
-                                    <button onClick={() => {
-                                        const amt = prompt("Amount Received ($):");
-                                        if(amt && !isNaN(amt)) {
-                                            db.ref(`clients/${c.id}`).update({
-                                                amountOwed: c.amountOwed - parseFloat(amt),
-                                                history: [...(c.history || []), {amount: parseFloat(amt), date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}]
-                                            });
-                                        }
-                                    }} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[10px] uppercase">Record Pay</button>
+                                    <button onClick={() => setPayingClient(c)} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[10px] uppercase">Record Pay</button>
                                     <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[10px] uppercase">Manage</button>
                                 </div>
                             </div>
                         ))}
+
+                        {payingClient && (
+                            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
+                                <form onSubmit={handleRecordPayment} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 shadow-2xl space-y-4 text-left">
+                                    <h3 className="text-xl font-black text-white uppercase italic">Record Payment</h3>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 mb-1 tracking-widest">Amount ($)</p>
+                                        <input type="number" name="payAmt" step="any" placeholder="0.00" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 mb-1 tracking-widest">Date Received</p>
+                                        <input type="date" name="payDate" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 mb-1 tracking-widest">Payment Method</p>
+                                        <select name="payMethod" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none appearance-none">
+                                            <option value="Bank Transfer">Bank Transfer</option>
+                                            <option value="Face to Face">Face to Face (Cash)</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" className="w-full bg-green-600 text-white font-black py-4 rounded-2xl uppercase text-xs mt-2">Submit Payment</button>
+                                    <button type="button" onClick={() => setPayingClient(null)} className="w-full text-center text-slate-500 font-bold uppercase text-[10px]">Cancel</button>
+                                </form>
+                            </div>
+                        )}
 
                         {editingClient && (
                             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
@@ -276,7 +315,10 @@ const App = () => {
                                             <div className="space-y-3">
                                                 {myPortfolio.history.map((h, i) => (
                                                     <div key={i} className="flex justify-between items-center bg-[#0f172a] p-3 rounded-2xl border border-slate-800">
-                                                        <div><p className="font-black text-white text-sm">-$ {h.amount.toFixed(2)}</p><p className="text-[10px] text-slate-500 font-bold uppercase">{h.date}</p></div>
+                                                        <div>
+                                                            <p className="font-black text-white text-sm">-$ {h.amount.toFixed(2)}</p>
+                                                            <p className="text-[10px] text-slate-500 font-bold uppercase">{h.date} • {h.method || 'Unknown'}</p>
+                                                        </div>
                                                         <div className="text-[9px] font-black text-green-400 uppercase border border-green-900/20 px-2 py-1 rounded-full">Paid</div>
                                                     </div>
                                                 ))}
