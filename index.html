@@ -82,28 +82,49 @@
                             <div className="space-y-4">
                                 <h2 className="text-lg font-bold text-slate-800">Active Portfolios</h2>
                                 {clients.length === 0 ? <p className="text-gray-400 italic">No clients yet.</p> : 
-                                 clients.map(c => (
-                                    <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-bold text-slate-800">{c.name}</h3>
-                                            <span className="bg-green-100 text-green-700 text-[10px] font-black px-2 py-1 rounded-full uppercase italic">Paid: {c.datePaid || 'Pending'}</span>
-                                        </div>
-                                        <p className="text-xs text-slate-400 mb-4">{c.address}</p>
-                                        <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                                            <div>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase">Principal Owed</p>
-                                                <p className="font-black text-lg text-slate-700">${c.amountOwed.toFixed(2)}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase">Interest Rate</p>
-                                                <p className="font-black text-lg text-blue-600">{c.interest}%</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                 ))
-                                }
-                            </div>
-                        )}
+                                clients.map(c => {
+    // Calculate the total (e.g., $1000 + 10% = $1100)
+    const totalWithInterest = c.amountOwed + (c.amountOwed * (c.interest / 100));
+    
+    return (
+        <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 mb-4">
+            <div className="flex justify-between items-center mb-4">
+                <div>
+                    <h3 className="font-bold text-slate-800 text-lg">{c.name}</h3>
+                    <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">{c.phone}</p>
+                </div>
+                <div className="text-right">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Total to Pay</p>
+                    <p className="font-black text-xl text-green-600">${totalWithInterest.toFixed(2)}</p>
+                </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-2xl">
+                <div className="text-center border-r">
+                    <p className="text-[9px] font-bold text-gray-400">LOAN</p>
+                    <p className="text-sm font-bold text-slate-700">${c.amountOwed.toFixed(2)}</p>
+                </div>
+                <div className="text-center border-r">
+                    <p className="text-[9px] font-bold text-gray-400">INTEREST</p>
+                    <p className="text-sm font-bold text-slate-700">{c.interest}%</p>
+                </div>
+                <div className="text-center">
+                    <p className="text-[9px] font-bold text-gray-400">DUE</p>
+                    <p className="text-sm font-bold text-red-500">{c.datePaid || 'TBD'}</p>
+                </div>
+            </div>
+            
+            <button 
+                onClick={() => {
+                    if(confirm(`Delete ${c.name}'s profile?`)) db.ref(`clients/${c.id}`).remove();
+                }}
+                className="w-full mt-4 py-2 text-[10px] font-bold text-red-300 hover:text-red-500 transition uppercase tracking-widest"
+            >
+                Remove Client Portfolio
+            </button>
+        </div>
+    );
+})
 
                         {/* VIEW 2: ADMIN (ADD CLIENT) */}
                         {view === 'admin' && (
