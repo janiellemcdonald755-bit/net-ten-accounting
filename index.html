@@ -17,6 +17,7 @@
     <script type="text/babel">
         // 1. CONFIG (Paste your real keys here!)
 const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
     authDomain: "net-ten-accounting.firebaseapp.com",
     databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
@@ -223,6 +224,7 @@ const App = () => {
                                     <input name="interest" type="number" step="any" placeholder="Interest %" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
                                 </div>
                                 <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                <textarea name="address" placeholder="Home/Business Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white h-20" />
                                 <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase tracking-widest">Create Profile</button>
                             </form>
                         )}
