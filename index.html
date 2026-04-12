@@ -42,7 +42,7 @@ const App = () => {
     const [editingClient, setEditingClient] = React.useState(null);
 
     const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
-    const ADMIN_PHONE = "1-876-517-7700"; 
+    const ADMIN_PHONE = "1-876-519-7700/1-876-318-0099"; 
     const APP_URL = window.location.href;
 
     React.useEffect(() => {
@@ -62,26 +62,39 @@ const App = () => {
         auth.signInWithEmailAndPassword(email, password).catch(err => alert(err.message));
     };
 
+    const addClient = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+        try {
+            await db.ref('clients').push({
+                ...data,
+                amountOwed: parseFloat(data.amountOwed || 0),
+                interest: parseFloat(data.interest || 0),
+                history: [],
+                dateAdded: Date.now()
+            });
+            alert("New Portfolio Created!");
+            e.target.reset();
+            setView('home');
+        } catch (err) { alert(err.message); }
+    };
+
     const scheduleMeeting = (e) => {
         e.preventDefault();
         const date = e.target.meetingDate.value;
         const time = e.target.meetingTime.value;
         if(!date) return alert("Please select a date.");
-
         const meetingString = time ? `${date} @ ${time}` : `${date} (Time TBD)`;
-        
-        db.ref(`clients/${myPortfolio.id}`).update({
-            meetingRequest: meetingString
-        });
-        alert("Meeting Request Sent!");
-        setShowCalendar(false);
-        setShowPayModal(false);
+        db.ref(`clients/${myPortfolio.id}`).update({ meetingRequest: meetingString });
+        alert("Meeting Requested!");
+        setShowCalendar(false); setShowPayModal(false);
     };
 
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-[#0f172a]">
-                <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border border-slate-700">
+                <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border border-slate-700 animate-in fade-in zoom-in-95">
                     <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" />
                     <h1 className="text-3xl font-black text-blue-400 mb-6 uppercase tracking-tighter italic">Net Ten</h1>
                     <form onSubmit={handleLogin} className="space-y-4">
@@ -104,14 +117,13 @@ const App = () => {
                     <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-10 h-10 object-contain" />
                     <h1 className="text-lg font-black text-white tracking-tighter leading-none uppercase italic">Net Ten</h1>
                 </div>
-                <button onClick={() => auth.signOut()} className="text-[10px] font-black text-red-400 border border-red-900/50 px-3 py-1 rounded-full">LOGOUT</button>
+                <button onClick={() => auth.signOut()} className="text-[10px] font-black text-red-400 border border-red-900/50 px-3 py-1 rounded-full uppercase">Logout</button>
             </header>
 
             <main className="p-4 max-w-lg mx-auto">
                 {isAdmin ? (
-                    /* ADMIN VIEW */
                     <div className="animate-in fade-in">
-                        <div className="flex bg-[#1e293b] p-1 rounded-2xl mb-6 border border-slate-700">
+                        <div className="flex bg-[#1e293b] p-1 rounded-2xl mb-6 border border-slate-700 shadow-inner">
                             <button onClick={() => setView('home')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${view === 'home' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Portfolios</button>
                             <button onClick={() => setView('add')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${view === 'add' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Add New</button>
                             <button onClick={() => setView('share')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${view === 'share' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Share</button>
@@ -121,12 +133,15 @@ const App = () => {
                             <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 text-left shadow-xl">
                                 {c.meetingRequest && (
                                     <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-2xl mb-4 flex justify-between items-center">
-                                        <p className="text-[10px] font-black text-blue-400 uppercase">📅 Meeting: {c.meetingRequest}</p>
+                                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-tight">📅 Meeting: {c.meetingRequest}</p>
                                         <button onClick={() => db.ref(`clients/${c.id}`).update({meetingRequest: null})} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-[9px] font-bold">CLEAR</button>
                                     </div>
                                 )}
-                                <div className="flex justify-between items-start">
-                                    <div><h3 className="font-black text-white text-lg">{c.name}</h3><p className="text-[10px] text-blue-400 font-bold uppercase">{c.email}</p></div>
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h3 className="font-black text-white text-lg leading-tight">{c.name}</h3>
+                                        <p className="text-[10px] text-blue-400 font-bold uppercase">{c.phone || 'No Phone'}</p>
+                                    </div>
                                     <div className="text-right">
                                         <p className="text-[10px] font-bold text-slate-500 uppercase leading-none">Owed</p>
                                         <p className="font-black text-lg text-green-400 leading-none">${(c.amountOwed + (c.amountOwed * (c.interest/100))).toFixed(2)}</p>
@@ -135,35 +150,72 @@ const App = () => {
                                 <div className="grid grid-cols-2 gap-2 mt-4">
                                     <button onClick={() => {
                                         const amt = prompt("Amount Received ($):");
-                                        if(amt) db.ref(`clients/${c.id}`).update({
-                                            amountOwed: c.amountOwed - parseFloat(amt),
-                                            history: [...(c.history || []), {amount: parseFloat(amt), date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}]
-                                        });
-                                    }} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[10px] uppercase">Record Pay</button>
-                                    <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[10px] uppercase">Manage</button>
+                                        if(amt && !isNaN(amt)) {
+                                            db.ref(`clients/${c.id}`).update({
+                                                amountOwed: c.amountOwed - parseFloat(amt),
+                                                history: [...(c.history || []), {amount: parseFloat(amt), date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}]
+                                            });
+                                        }
+                                    }} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest">Record Pay</button>
+                                    <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest">Manage</button>
                                 </div>
                             </div>
                         ))}
 
-                        {/* EDIT MODAL */}
+                        {/* RESTORED EDIT MODAL */}
                         {editingClient && (
                             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
                                     const d = Object.fromEntries(new FormData(e.target).entries());
-                                    db.ref(`clients/${editingClient.id}`).update({...d, amountOwed: parseFloat(d.amountOwed), interest: parseFloat(d.interest)});
-                                    setEditingClient(null); alert("Saved!");
-                                }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-4 text-left">
-                                    <h3 className="text-xl font-black text-white uppercase italic">Edit Portfolio</h3>
-                                    <input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
-                                    <input name="email" defaultValue={editingClient.email} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
+                                    db.ref(`clients/${editingClient.id}`).update({
+                                        ...d, 
+                                        amountOwed: parseFloat(d.amountOwed), 
+                                        interest: parseFloat(d.interest)
+                                    });
+                                    setEditingClient(null); alert("Updated!");
+                                }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 shadow-2xl space-y-3 text-left overflow-y-auto max-h-[90vh]">
+                                    <h3 className="text-xl font-black text-white uppercase italic mb-2">Edit Portfolio</h3>
+                                    <input name="name" defaultValue={editingClient.name} placeholder="Name" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
+                                    <input name="email" defaultValue={editingClient.email} placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
+                                    <input name="phone" defaultValue={editingClient.phone} placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                    <textarea name="address" defaultValue={editingClient.address} placeholder="Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none h-20" />
                                     <div className="grid grid-cols-2 gap-3">
                                         <input name="amountOwed" type="number" step="any" defaultValue={editingClient.amountOwed} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
                                         <input name="interest" type="number" step="any" defaultValue={editingClient.interest} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
                                     </div>
-                                    <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Save Changes</button>
+                                    <input name="datePaid" defaultValue={editingClient.datePaid} placeholder="Due Date (e.g. Apr 15)" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                    <div className="flex gap-2 pt-2">
+                                        <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Save</button>
+                                        <button type="button" onClick={() => {if(confirm("Delete?")){db.ref(`clients/${editingClient.id}`).remove(); setEditingClient(null);}}} className="px-5 bg-red-900/20 text-red-500 rounded-2xl font-bold text-[10px]">DEL</button>
+                                    </div>
                                     <button type="button" onClick={() => setEditingClient(null)} className="w-full text-center text-slate-500 font-bold uppercase text-[10px]">Cancel</button>
                                 </form>
+                            </div>
+                        )}
+
+                        {/* RESTORED ADD FORM */}
+                        {view === 'add' && (
+                            <form onSubmit={addClient} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-4 text-left animate-in slide-in-from-bottom-4 shadow-2xl">
+                                <h2 className="text-xl font-black text-white italic uppercase mb-2">New Portfolio</h2>
+                                <input name="name" placeholder="Client Name" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" required />
+                                <input name="email" placeholder="Email Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" required />
+                                <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                <textarea name="address" placeholder="Home Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white h-20"></textarea>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input name="amountOwed" type="number" step="any" placeholder="Balance $" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                    <input name="interest" type="number" step="any" placeholder="Interest %" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                </div>
+                                <input name="datePaid" placeholder="Due Date (e.g. Every Friday)" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase tracking-widest mt-2">Create Profile</button>
+                            </form>
+                        )}
+
+                        {view === 'share' && (
+                            <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700 text-center shadow-2xl animate-in zoom-in-95">
+                                <h2 className="text-2xl font-black text-white uppercase italic mb-6">Share App</h2>
+                                <div className="bg-white p-4 rounded-[32px] inline-block mb-6 shadow-xl"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(APP_URL)}`} className="w-48 h-48 rounded-xl" /></div>
+                                <button onClick={() => {navigator.clipboard.writeText(APP_URL); alert("Copied!")}} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-xs">Copy Link</button>
                             </div>
                         )}
                     </div>
@@ -171,7 +223,6 @@ const App = () => {
                     /* CLIENT VIEW */
                     myPortfolio ? (
                         <div className="animate-in fade-in">
-                            {/* DASHBOARD STATUS BAR */}
                             {myPortfolio.meetingRequest && (
                                 <div className="bg-blue-600 p-3 rounded-2xl mb-4 flex items-center gap-3 shadow-lg border border-blue-400/30">
                                     <span className="text-xl">📅</span>
@@ -193,9 +244,7 @@ const App = () => {
                                         <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
                                         <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-16 h-16 mx-auto mb-4" />
                                         <p className="text-slate-500 font-bold text-xs uppercase mb-1 tracking-widest">Balance Owed</p>
-                                        <h2 className="text-5xl font-black text-white mb-8 tracking-tighter italic leading-none">
-                                            ${(myPortfolio.amountOwed + (myPortfolio.amountOwed * (myPortfolio.interest / 100))).toFixed(2)}
-                                        </h2>
+                                        <h2 className="text-5xl font-black text-white mb-8 tracking-tighter italic leading-none">${(myPortfolio.amountOwed + (myPortfolio.amountOwed * (myPortfolio.interest / 100))).toFixed(2)}</h2>
                                         <button onClick={() => setShowPayModal(true)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase text-sm">Make a Payment</button>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -206,7 +255,7 @@ const App = () => {
                             ) : (
                                 <div className="space-y-6 text-left">
                                     <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 shadow-xl">
-                                        <h4 className="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Recent Activity</h4>
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Transactions</h4>
                                         {myPortfolio.history && myPortfolio.history.length > 0 ? (
                                             <div className="space-y-3">
                                                 {myPortfolio.history.map((h, i) => (
@@ -225,29 +274,17 @@ const App = () => {
                             {showPayModal && (
                                 <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-[#0f172a]/90 backdrop-blur-sm">
                                     <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 text-left shadow-2xl animate-in slide-in-from-bottom-10">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h3 className="text-xl font-black text-white uppercase italic">Payment</h3>
-                                            <button onClick={() => {setShowPayModal(false); setShowCalendar(false)}} className="text-slate-500 text-2xl font-bold">×</button>
-                                        </div>
-                                        
+                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-white uppercase italic">Payment</h3><button onClick={() => {setShowPayModal(false); setShowCalendar(false)}} className="text-slate-500 text-2xl font-bold">×</button></div>
                                         {!showCalendar ? (
                                             <div className="space-y-4">
-                                                <div className="p-4 bg-[#0f172a] rounded-2xl border border-slate-700"><p className="font-bold text-blue-400 text-xs uppercase">Option 1: Bank Transfer</p><p className="text-sm text-slate-400">Request bank details via text.</p></div>
-                                                <button onClick={() => setShowCalendar(true)} className="w-full p-4 bg-blue-900/10 rounded-2xl border border-blue-800 text-left">
-                                                    <p className="font-bold text-blue-400 text-xs uppercase">Option 2: Meet Winston</p><p className="text-sm text-slate-400 font-medium tracking-tight">Select a date (Time Optional).</p>
-                                                </button>
+                                                <div className="p-4 bg-[#0f172a] rounded-2xl border border-slate-700"><p className="font-bold text-blue-400 text-xs uppercase">Option 1: Bank Transfer</p><p className="text-sm text-slate-400">Request account details via text.</p></div>
+                                                <button onClick={() => setShowCalendar(true)} className="w-full p-4 bg-blue-900/10 rounded-2xl border border-blue-800 text-left"><p className="font-bold text-blue-400 text-xs uppercase">Option 2: Meet Winston</p><p className="text-sm text-slate-400 font-medium tracking-tight">Select a date (Time Optional).</p></button>
                                             </div>
                                         ) : (
                                             <form onSubmit={scheduleMeeting} className="space-y-4 animate-in slide-in-from-right-4">
-                                                <div>
-                                                    <p className="text-[10px] font-black text-blue-400 uppercase mb-2 tracking-widest">1. Pick a Date *</p>
-                                                    <input type="date" name="meetingDate" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">2. Pick a Time (Optional)</p>
-                                                    <input type="time" name="meetingTime" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                                </div>
-                                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs shadow-lg">Submit Request</button>
+                                                <div><p className="text-[10px] font-black text-blue-400 uppercase mb-2 tracking-widest">1. Date *</p><input type="date" name="meetingDate" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required /></div>
+                                                <div><p className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">2. Time (Optional)</p><input type="time" name="meetingTime" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" /></div>
+                                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Submit Request</button>
                                                 <button type="button" onClick={() => setShowCalendar(false)} className="w-full text-center text-slate-500 text-[10px] font-bold uppercase">Back</button>
                                             </form>
                                         )}
@@ -255,9 +292,7 @@ const App = () => {
                                 </div>
                             )}
                         </div>
-                    ) : (
-                        <div className="text-center p-12 bg-[#1e293b] rounded-3xl border border-slate-700 text-slate-500 font-medium">Profile not found.</div>
-                    )
+                    ) : ( <div className="text-center p-12 bg-[#1e293b] rounded-3xl border border-slate-700 text-slate-500 font-medium">Profile not found.</div> )
                 )}
             </main>
         </div>
