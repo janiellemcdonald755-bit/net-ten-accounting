@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Net Ten Accounting</title>
+    <title>Net Ten Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -11,11 +11,11 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50">
+<body class="bg-slate-50 font-sans">
     <div id="root"></div>
 
     <script type="text/babel">
-        // 1. CONFIG (Keep your real keys here!)
+        // 1. CONFIG (Paste your real keys here!)
         const firebaseConfig = {
             apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
             authDomain: "net-ten-accounting.firebaseapp.com",
@@ -33,142 +33,112 @@
         const App = () => {
             const [user, setUser] = React.useState(null);
             const [view, setView] = React.useState('home'); 
-            const [email, setEmail] = React.useState('');
-            const [password, setPassword] = React.useState('');
-            const [transactions, setTransactions] = React.useState([]);
-            const [bizInfo, setBizInfo] = React.useState({
-                name: "Net Ten Accounting",
-                address: "123 Business Lane, City",
-                phone: "(555) 000-0000"
-            });
-
-            // Listen for user login
+            const [clients, setClients] = React.useState([]);
+            
+            // Listen for user & data
             React.useEffect(() => {
-                const unsub = auth.onAuthStateChanged(u => setUser(u));
-                return () => unsub();
-            }, []);
-
-            // Listen for data
-            React.useEffect(() => {
-                if (!user) return;
-                const ref = db.ref('transactions');
-                ref.on('value', (snap) => {
+                auth.onAuthStateChanged(u => setUser(u));
+                db.ref('clients').on('value', (snap) => {
                     const data = snap.val();
                     const list = [];
                     if (data) Object.keys(data).forEach(k => list.push({id: k, ...data[k]}));
-                    setTransactions(list.sort((a,b) => b.date - a.date));
+                    setClients(list);
                 });
-                return () => ref.off();
-            }, [user]);
+            }, []);
 
-            const handleLogin = (e) => {
+            const addClient = (e) => {
                 e.preventDefault();
-                auth.signInWithEmailAndPassword(email, password).catch(err => alert(err.message));
+                const formData = new FormData(e.target);
+                const newClient = Object.fromEntries(formData.entries());
+                db.ref('clients').push({
+                    ...newClient,
+                    amountOwed: parseFloat(newClient.amountOwed || 0),
+                    interest: parseFloat(newClient.interest || 0),
+                    dateAdded: Date.now()
+                });
+                e.target.reset();
+                alert("Client Saved!");
             };
 
-            // --- LOGIN SCREEN ---
-            if (!user) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center p-6">
-                        <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center">
-                            <h1 className="text-3xl font-black text-blue-600 mb-2">Net Ten</h1>
-                            <p className="text-gray-400 mb-8 font-medium">Client Portal Login</p>
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <input type="email" placeholder="Email" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setEmail(e.target.value)} />
-                                <input type="password" placeholder="Password" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setPassword(e.target.value)} />
-                                <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg">Enter Dashboard</button>
-                            </form>
-                        </div>
-                    </div>
-                );
-            }
+            if (!user) return <div className="p-10 text-center font-bold">Please Login (See previous code for Login UI)</div>;
 
-            // --- MAIN APP UI ---
             return (
                 <div className="min-h-screen pb-24">
-                    {/* Professional Header */}
-                    <header className="bg-white p-6 shadow-sm border-b">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h1 className="text-xl font-bold text-slate-800">{bizInfo.name}</h1>
-                                <p className="text-xs text-slate-400">{bizInfo.address} • {bizInfo.phone}</p>
-                            </div>
-                            <button onClick={() => auth.signOut()} className="text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full">Sign Out</button>
-                        </div>
+                    {/* Top Header */}
+                    <header className="bg-white p-6 shadow-sm border-b flex justify-between items-center">
+                        <h1 className="text-xl font-black text-blue-600 italic">NET TEN ADMIN</h1>
+                        <button onClick={() => auth.signOut()} className="text-xs font-bold text-gray-400">Logout</button>
                     </header>
 
-                    <main className="p-6">
+                    <main className="p-4 max-w-lg mx-auto">
+                        {/* NAVIGATION TABS */}
+                        <div className="flex bg-gray-200 p-1 rounded-xl mb-6">
+                            <button onClick={() => setView('home')} className={`flex-1 py-2 rounded-lg text-sm font-bold ${view === 'home' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Clients</button>
+                            <button onClick={() => setView('admin')} className={`flex-1 py-2 rounded-lg text-sm font-bold ${view === 'admin' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>Add New</button>
+                        </div>
+
+                        {/* VIEW 1: CLIENT LIST */}
                         {view === 'home' && (
-                            <div className="space-y-6">
-                                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 rounded-3xl text-white shadow-lg">
-                                    <h2 className="text-2xl font-bold">Good Morning!</h2>
-                                    <p className="opacity-80">Welcome to your secure business dashboard.</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button onClick={() => setView('money')} className="bg-white p-6 rounded-3xl shadow-sm border text-left">
-                                        <div className="mb-2 text-2xl">📊</div>
-                                        <p className="font-bold">Accounting</p>
-                                    </button>
-                                    <button onClick={() => setView('profile')} className="bg-white p-6 rounded-3xl shadow-sm border text-left">
-                                        <div className="mb-2 text-2xl">⚙️</div>
-                                        <p className="font-bold">Settings</p>
-                                    </button>
-                                </div>
+                            <div className="space-y-4">
+                                <h2 className="text-lg font-bold text-slate-800">Active Portfolios</h2>
+                                {clients.length === 0 ? <p className="text-gray-400 italic">No clients yet.</p> : 
+                                 clients.map(c => (
+                                    <div key={c.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-slate-800">{c.name}</h3>
+                                            <span className="bg-green-100 text-green-700 text-[10px] font-black px-2 py-1 rounded-full uppercase italic">Paid: {c.datePaid || 'Pending'}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-400 mb-4">{c.address}</p>
+                                        <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase">Principal Owed</p>
+                                                <p className="font-black text-lg text-slate-700">${c.amountOwed.toFixed(2)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase">Interest Rate</p>
+                                                <p className="font-black text-lg text-blue-600">{c.interest}%</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                 ))
+                                }
                             </div>
                         )}
 
-    {view === 'money' && (
-    <div className="animate-in slide-in-from-right duration-300">
-        <button onClick={() => setView('home')} className="mb-6 text-sm font-bold text-blue-600 flex items-center">
-            ← Back to Dashboard
-        </button>
+                        {/* VIEW 2: ADMIN (ADD CLIENT) */}
+                        {view === 'admin' && (
+                            <form onSubmit={addClient} className="bg-white p-6 rounded-3xl shadow-xl border space-y-4 animate-in fade-in">
+                                <h2 className="text-xl font-bold text-slate-800 mb-2">Onboard New Client</h2>
+                                <input name="name" placeholder="Full Name" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500" required />
+                                <input name="email" type="email" placeholder="Email Address" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none" required />
+                                <input name="phone" placeholder="Phone Number" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none" />
+                                <textarea name="address" placeholder="Business Address" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none"></textarea>
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input name="amountOwed" type="number" placeholder="Amount Owed ($)" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none" required />
+                                    <input name="interest" type="number" placeholder="Interest %" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none" required />
+                                </div>
 
-        {/* The Balance Card we perfected */}
-        <div className="bg-white rounded-3xl shadow-xl p-6 mb-6 border-t-4 border-blue-500">
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Current Balance</p>
-            <h2 className="text-4xl font-black text-slate-800">
-                ${transactions.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0).toFixed(2)}
-            </h2>
-        </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 ml-2">DATE TAKEN</label>
+                                        <input name="dateTaken" type="date" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none mt-1" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 ml-2">DATE PAID BACK</label>
+                                        <input name="datePaid" type="date" className="w-full p-3 bg-slate-50 rounded-xl border-none outline-none mt-1" />
+                                    </div>
+                                </div>
 
-        {/* Quick Add Form */}
-        <div className="bg-white rounded-3xl p-6 shadow-sm border mb-6">
-            <h3 className="font-bold mb-4 text-slate-700">Add Transaction</h3>
-            <div className="flex gap-2 mb-4">
-                <input type="text" placeholder="Source" id="new-name" className="flex-1 p-3 bg-slate-50 rounded-xl outline-none" />
-                <input type="number" placeholder="0.00" id="new-amount" className="w-24 p-3 bg-slate-50 rounded-xl outline-none" />
-            </div>
-            <button 
-                onClick={() => {
-                    const n = document.getElementById('new-name').value;
-                    const a = document.getElementById('new-amount').value;
-                    if(n && a) {
-                        db.ref('transactions').push({ name: n, amount: parseFloat(a), type: 'income', date: Date.now() });
-                        document.getElementById('new-name').value = '';
-                        document.getElementById('new-amount').value = '';
-                    }
-                }}
-                className="w-full bg-green-600 text-white font-bold py-3 rounded-xl shadow-md"
-            >
-                Add Income +
-            </button>
-        </div>
-
-        {/* History List */}
-        <div className="space-y-3">
-            <h3 className="font-bold text-slate-700 px-2">History</h3>
-            {transactions.map(t => (
-                <div key={t.id} className="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border">
-                    <div>
-                        <p className="font-bold text-slate-800">{t.name}</p>
-                        <p className="text-[10px] text-slate-400 uppercase font-bold">{new Date(t.date).toLocaleDateString()}</p>
-                    </div>
-                    <span className="font-black text-green-600">+${t.amount.toFixed(2)}</span>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition transform active:scale-95">
+                                    SAVE CLIENT PROFILE
+                                </button>
+                            </form>
+                        )}
+                    </main>
                 </div>
-            ))}
-        </div>
-    </div>
-)}
+            );
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
