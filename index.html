@@ -2,103 +2,143 @@
 <html>
 <head>
     <title>Net Ten Accounting</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-50">
     <div id="root"></div>
 
     <script type="text/babel">
-        // 1. YOUR CONFIG
+        // 1. CONFIG (Keep your real keys here!)
         const firebaseConfig = {
-            apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
+            apiKey: "YOUR_API_KEY",
             authDomain: "net-ten-accounting.firebaseapp.com",
             databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
             projectId: "net-ten-accounting",
             storageBucket: "net-ten-accounting.appspot.com",
             messagingSenderId: "1095937995425",
-            appId: "1:1095937995425:web:9d2089d7044a007e6336e0"
+            appId: "YOUR_APP_ID"
         };
 
-        // 2. INITIALIZE
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const database = firebase.database();
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
 
-        // 3. THE APP
- const App = () => {
-    const [currentPage, setCurrentPage] = React.useState('home'); // Switch between 'home', 'accounting', 'admin'
-    const [businessInfo, setBusinessInfo] = React.useState({ name: 'Net Ten', address: '', phone: '' });
+        const App = () => {
+            const [user, setUser] = React.useState(null);
+            const [view, setView] = React.useState('home'); 
+            const [email, setEmail] = React.useState('');
+            const [password, setPassword] = React.useState('');
+            const [transactions, setTransactions] = React.useState([]);
+            const [bizInfo, setBizInfo] = React.useState({
+                name: "Net Ten Accounting",
+                address: "123 Business Lane, City",
+                phone: "(555) 000-0000"
+            });
 
-    // Load Business Settings
-    React.useEffect(() => {
-        database.ref('settings').on('value', (snapshot) => {
-            if (snapshot.val()) setBusinessInfo(snapshot.val());
-        });
-    }, []);
+            // Listen for user login
+            React.useEffect(() => {
+                const unsub = auth.onAuthStateChanged(u => setUser(u));
+                return () => unsub();
+            }, []);
 
-    // ... (Keep your transaction logic here) ...
+            // Listen for data
+            React.useEffect(() => {
+                if (!user) return;
+                const ref = db.ref('transactions');
+                ref.on('value', (snap) => {
+                    const data = snap.val();
+                    const list = [];
+                    if (data) Object.keys(data).forEach(k => list.push({id: k, ...data[k]}));
+                    setTransactions(list.sort((a,b) => b.date - a.date));
+                });
+                return () => ref.off();
+            }, [user]);
 
-    return (
-        <div className="min-h-screen bg-slate-50 pb-20">
-            {/* 1. TOP HEADER (The "Professional" Look) */}
-            <div className="bg-white p-6 shadow-sm border-b">
-                <h1 className="text-xl font-bold">{businessInfo.name}</h1>
-                <p className="text-gray-400 text-sm">{businessInfo.address}</p>
-            </div>
+            const handleLogin = (e) => {
+                e.preventDefault();
+                auth.signInWithEmailAndPassword(email, password).catch(err => alert(err.message));
+            };
 
-            {/* 2. PAGE CONTENT */}
-            <main className="p-4">
-                {currentPage === 'home' && (
-                    <div className="text-center mt-10">
-                        <h2 className="text-2xl font-bold">Welcome Back!</h2>
-                        <p className="text-gray-500">Your business is looking great today.</p>
-                        {/* Summary cards would go here */}
+            // --- LOGIN SCREEN ---
+            if (!user) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6">
+                        <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center">
+                            <h1 className="text-3xl font-black text-blue-600 mb-2">Net Ten</h1>
+                            <p className="text-gray-400 mb-8 font-medium">Client Portal Login</p>
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <input type="email" placeholder="Email" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setEmail(e.target.value)} />
+                                <input type="password" placeholder="Password" className="w-full p-4 bg-gray-50 rounded-2xl outline-none border focus:border-blue-500" onChange={e => setPassword(e.target.value)} />
+                                <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg">Enter Dashboard</button>
+                            </form>
+                        </div>
                     </div>
-                )}
+                );
+            }
 
-                {currentPage === 'accounting' && (
-                    <div className="animate-in fade-in">
-                        {/* PASTE YOUR ENTIRE ACCOUNTING UI CODE HERE */}
-                    </div>
-                )}
+            // --- MAIN APP UI ---
+            return (
+                <div className="min-h-screen pb-24">
+                    {/* Professional Header */}
+                    <header className="bg-white p-6 shadow-sm border-b">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h1 className="text-xl font-bold text-slate-800">{bizInfo.name}</h1>
+                                <p className="text-xs text-slate-400">{bizInfo.address} • {bizInfo.phone}</p>
+                            </div>
+                            <button onClick={() => auth.signOut()} className="text-xs font-bold text-red-500 bg-red-50 px-3 py-1 rounded-full">Sign Out</button>
+                        </div>
+                    </header>
 
-                {currentPage === 'admin' && (
-                    <div className="bg-white p-6 rounded-xl shadow">
-                        <h2 className="text-lg font-bold mb-4">Business Settings</h2>
-                        <input 
-                            className="w-full p-2 border mb-2" 
-                            placeholder="Business Name"
-                            value={businessInfo.name}
-                            onChange={(e) => database.ref('settings/name').set(e.target.value)}
-                        />
-                        {/* Add more inputs for address/phone */}
-                    </div>
-                )}
-            </main>
+                    <main className="p-6">
+                        {view === 'home' && (
+                            <div className="space-y-6">
+                                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 rounded-3xl text-white shadow-lg">
+                                    <h2 className="text-2xl font-bold">Good Morning!</h2>
+                                    <p className="opacity-80">Welcome to your secure business dashboard.</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={() => setView('money')} className="bg-white p-6 rounded-3xl shadow-sm border text-left">
+                                        <div className="mb-2 text-2xl">📊</div>
+                                        <p className="font-bold">Accounting</p>
+                                    </button>
+                                    <button onClick={() => setView('profile')} className="bg-white p-6 rounded-3xl shadow-sm border text-left">
+                                        <div className="mb-2 text-2xl">⚙️</div>
+                                        <p className="font-bold">Settings</p>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
-            {/* 3. NAVIGATION BAR (The "App" Look) */}
-            <nav className="fixed bottom-0 w-full bg-white border-t flex justify-around p-3 shadow-2xl">
-                <button onClick={() => setCurrentPage('home')} className={`flex flex-col items-center ${currentPage === 'home' ? 'text-blue-600' : 'text-gray-400'}`}>
-                    <span className="text-xs font-bold">Home</span>
-                </button>
-                <button onClick={() => setCurrentPage('accounting')} className={`flex flex-col items-center ${currentPage === 'accounting' ? 'text-blue-600' : 'text-gray-400'}`}>
-                    <span className="text-xs font-bold">Accounting</span>
-                </button>
-                <button onClick={() => setCurrentPage('admin')} className={`flex flex-col items-center ${currentPage === 'admin' ? 'text-blue-600' : 'text-gray-400'}`}>
-                    <span className="text-xs font-bold">Admin</span>
-                </button>
-            </nav>
-        </div>
-    );
-};
+                        {view === 'money' && (
+                            <div className="animate-in fade-in duration-500">
+                                {/* Your working accounting code goes here! */}
+                                <div className="bg-white p-6 rounded-3xl shadow-sm border mb-6">
+                                    <p className="text-sm font-bold text-gray-400">CURRENT BALANCE</p>
+                                    <h2 className="text-4xl font-black text-slate-800">$100.00</h2>
+                                </div>
+                                <button onClick={() => setView('home')} className="text-blue-600 font-bold mb-4">← Back to Home</button>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Bottom Nav Bar */}
+                    <nav className="fixed bottom-0 w-full bg-white/90 backdrop-blur-md border-t flex justify-around p-4 shadow-2xl">
+                        <button onClick={() => setView('home')} className={view === 'home' ? 'text-blue-600 font-bold' : 'text-gray-400'}>Home</button>
+                        <button onClick={() => setView('money')} className={view === 'money' ? 'text-blue-600 font-bold' : 'text-gray-400'}>Money</button>
+                        <button onClick={() => setView('profile')} className={view === 'profile' ? 'text-blue-600 font-bold' : 'text-gray-400'}>Profile</button>
+                    </nav>
+                </div>
+            );
+        };
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
