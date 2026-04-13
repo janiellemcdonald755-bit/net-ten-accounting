@@ -159,6 +159,12 @@ const App = () => {
                         {view === 'home' && clients.map(c => (
                             <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 text-left shadow-xl relative overflow-hidden">
                                 {c.directMsg && <div className="absolute top-0 right-0 bg-blue-500 text-[8px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-tighter">Msg Sent</div>}
+                                {c.meetingRequest && (
+                                    <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-2xl mb-4 flex justify-between items-center">
+                                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-tight">📅 Meeting: {c.meetingRequest}</p>
+                                        <button onClick={() => db.ref(`clients/${c.id}`).update({meetingRequest: null})} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-[9px] font-bold">CLEAR</button>
+                                    </div>
+                                )}
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
                                         <h3 className="font-black text-white text-lg leading-tight">{c.name}</h3>
@@ -170,20 +176,53 @@ const App = () => {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-2 mt-4">
-                                    <button onClick={() => setPayingClient(c)} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[9px] uppercase">Pay</button>
-                                    <button onClick={() => setMsgTarget(c)} className="bg-blue-600 text-white py-3 rounded-xl font-bold text-[9px] uppercase">Message</button>
-                                    <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[9px] uppercase">Edit</button>
+                                    <button onClick={() => setPayingClient(c)} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Record Pay</button>
+                                    <button onClick={() => setMsgTarget(c)} className="bg-blue-600 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Message</button>
+                                    <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[8px] uppercase">Edit/Del</button>
                                 </div>
                             </div>
                         ))}
+
+                        {view === 'add' && (
+                            <form onSubmit={addClient} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-4 text-left animate-in slide-in-from-bottom-4">
+                                <h2 className="text-xl font-black text-white italic uppercase">New Portfolio</h2>
+                                <input name="name" placeholder="Client Name" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" required />
+                                <input name="email" placeholder="Email Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" required />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Date Borrowed</p>
+                                        <input type="date" name="dateBorrowed" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase ml-1 tracking-widest">Due Date</p>
+                                        <input type="date" name="datePaid" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input name="amountOwed" type="number" step="any" placeholder="Balance $" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                    <input name="interest" type="number" step="any" placeholder="Interest %" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                </div>
+                                <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white" />
+                                <textarea name="address" placeholder="Client Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white h-20" />
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase tracking-widest">Create Profile</button>
+                            </form>
+                        )}
+
+                        {view === 'share' && (
+                            <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700 text-center shadow-2xl">
+                                <h2 className="text-2xl font-black text-white uppercase italic mb-6">Share App</h2>
+                                <div className="bg-white p-4 rounded-[32px] inline-block mb-6 shadow-xl"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(APP_URL)}`} className="w-48 h-48 rounded-xl" /></div>
+                                <button onClick={() => {navigator.clipboard.writeText(APP_URL); alert("Copied!")}} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-xs">Copy Link</button>
+                            </div>
+                        )}
 
                         {msgTarget && (
                             <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
                                 <form onSubmit={sendDirectMsg} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 shadow-2xl space-y-4 text-left">
                                     <h3 className="text-xl font-black text-white uppercase italic">Message to {msgTarget.name}</h3>
-                                    <textarea name="msgText" placeholder="Type your private message..." className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white h-32" required />
+                                    <textarea name="msgText" placeholder="Type private message..." className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 outline-none text-white h-32" required />
                                     <div className="flex gap-2">
-                                        <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Send Message</button>
+                                        <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Send</button>
                                         <button type="button" onClick={() => {db.ref(`clients/${msgTarget.id}`).update({directMsg: ""}); setMsgTarget(null);}} className="px-4 bg-red-900/20 text-red-500 rounded-2xl font-bold text-[9px]">CLEAR</button>
                                     </div>
                                     <button type="button" onClick={() => setMsgTarget(null)} className="w-full text-center text-slate-500 font-bold uppercase text-[10px]">Cancel</button>
@@ -206,15 +245,44 @@ const App = () => {
                                 </form>
                             </div>
                         )}
-                        {/* (Other Admin Views remain the same) */}
+
+                        {editingClient && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const d = Object.fromEntries(new FormData(e.target).entries());
+                                    db.ref(`clients/${editingClient.id}`).update({
+                                        ...d, amountOwed: parseFloat(d.amountOwed), interest: parseFloat(d.interest)
+                                    });
+                                    setEditingClient(null); alert("Updated!");
+                                }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 shadow-2xl space-y-3 text-left overflow-y-auto max-h-[90vh]">
+                                    <h3 className="text-xl font-black text-white uppercase italic">Edit Portfolio</h3>
+                                    <input name="name" defaultValue={editingClient.name} placeholder="Name" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
+                                    <input name="email" defaultValue={editingClient.email} placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
+                                    <input name="phone" defaultValue={editingClient.phone} placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input type="date" name="dateBorrowed" defaultValue={editingClient.dateBorrowed} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                        <input type="date" name="datePaid" defaultValue={editingClient.datePaid} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input name="amountOwed" type="number" step="any" defaultValue={editingClient.amountOwed} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                        <input name="interest" type="number" step="any" defaultValue={editingClient.interest} className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
+                                    </div>
+                                    <textarea name="address" defaultValue={editingClient.address} placeholder="Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none h-16" />
+                                    <div className="flex gap-2 pt-2">
+                                        <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl uppercase text-xs">Save</button>
+                                        <button type="button" onClick={() => {if(confirm("Delete?")){db.ref(`clients/${editingClient.id}`).remove(); setEditingClient(null);}}} className="px-5 bg-red-900/20 text-red-500 rounded-2xl font-bold text-[10px]">DEL</button>
+                                    </div>
+                                    <button type="button" onClick={() => setEditingClient(null)} className="w-full text-center text-slate-500 font-bold uppercase text-[10px]">Cancel</button>
+                                </form>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     myPortfolio ? (
                         <div className="animate-in fade-in">
-                            {/* CLIENT-SPECIFIC MESSAGE ALERT */}
                             {myPortfolio.directMsg && (
                                 <div className="mb-6 p-5 bg-blue-600 rounded-[32px] shadow-lg border border-blue-400 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-2 opacity-20 text-4xl">✉️</div>
                                     <p className="text-[10px] font-black text-blue-200 uppercase tracking-widest mb-1">Message from Winston</p>
                                     <p className="text-lg font-black text-white leading-tight mb-4">{myPortfolio.directMsg}</p>
                                     <button onClick={() => db.ref(`clients/${myPortfolio.id}`).update({directMsg: ""})} className="bg-white text-blue-600 px-6 py-2 rounded-xl font-black text-[10px] uppercase shadow-md">Got it!</button>
