@@ -85,259 +85,74 @@ const App = () => {
         } catch (err) { alert(err.message); }
     };
 
-    const isAdmin = user?.email === ADMIN_EMAIL;
-    const myPortfolio = clients.find(c => c.email?.toLowerCase() === user?.email?.toLowerCase());
+ // ... (Firebase Config stays the same)
 
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-[#0f172a]">
-                <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border border-slate-700">
-                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" />
-                    <h1 className="text-3xl font-black text-blue-400 mb-2 uppercase italic tracking-tighter">Net Ten Ltd</h1>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-6 tracking-widest">Portal Login</p>
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <input type="text" placeholder="Email or Phone Number" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setLoginId(e.target.value)} />
-                        <input type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setPassword(e.target.value)} />
-                        <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg uppercase tracking-widest">Sign In</button>
-                    </form>
-                </div>
-            </div>
-        );
-    }
+// ... (Firebase Config stays the same)
 
-    return (
-        <div className="min-h-screen pb-24 bg-[#0f172a] text-slate-200 font-sans">
-            <header className="sticky top-0 z-50 bg-[#1e293b]/80 backdrop-blur-md p-5 border-b border-slate-700 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-8 h-8 object-contain" />
-                    <h1 className="text-md font-black text-white uppercase italic">Net Ten Ltd</h1>
-                </div>
-                <button onClick={() => auth.signOut()} className="text-[9px] font-black text-red-400 border border-red-900/50 px-3 py-1 rounded-full uppercase">Logout</button>
-            </header>
+const isAdmin = user?.email === ADMIN_EMAIL;
+const myPortfolio = clients.find(c => c.email?.toLowerCase() === user?.email?.toLowerCase());
 
-            <main className="p-4 max-w-lg mx-auto">
-                {isAdmin ? (
-                    <div className="animate-in fade-in">
-                        <div className="flex bg-[#1e293b] p-1 rounded-2xl mb-6 border border-slate-700">
-                            <button onClick={() => setView('home')} className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest ${view === 'home' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Portfolios</button>
-                            <button onClick={() => setView('add')} className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest ${view === 'add' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Add New</button>
-                        </div>
-
-                        {view === 'home' && clients.map(c => (
-                            <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 text-left shadow-xl">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <h3 className="font-black text-white text-lg leading-tight">{c.name}</h3>
-                                        <p className="text-[10px] text-blue-400 font-bold uppercase">{c.phone}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[9px] font-bold text-slate-500 uppercase">Balance</p>
-                                        <p className="font-black text-lg text-green-400">${(parseFloat(c.amountOwed || 0) + parseFloat(c.additionalFunds || 0)).toFixed(2)}</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 mt-4">
-                                    <button onClick={() => setPayingClient(c)} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Record Pay</button>
-                                    <button onClick={() => setMsgTarget(c)} className="bg-blue-600 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Message</button>
-                                    <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[8px] uppercase">Full Info</button>
-                                </div>
-                            </div>
-                        ))}
-
-                        {view === 'add' && (
-                            <form onSubmit={addClient} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-3 text-left animate-in slide-in-from-bottom-4">
-                                <h2 className="text-lg font-black text-white uppercase italic">New Client Profile</h2>
-                                <input name="name" placeholder="Name" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
-                                <input name="phone" placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
-                                <input name="email" placeholder="Email (Optional)" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-[8px] font-black text-slate-500 uppercase ml-2 mb-1 block">Date Borrowed</label>
-                                        <input type="date" name="dateBorrowed" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none text-xs" />
-                                    </div>
-                                    <div>
-                                        <label className="text-[8px] font-black text-slate-500 uppercase ml-2 mb-1 block">Due Date</label>
-                                        <input type="date" name="datePaid" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none text-xs" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input name="amountOwed" type="number" step="any" placeholder="Initial Loan $" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                    <input name="additionalFunds" type="number" step="any" placeholder="Top Up Funds $" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                </div>
-
-                                <textarea name="address" placeholder="Home/Business Address" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white h-20 outline-none" />
-                                <input name="employer" placeholder="Employed To" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                <input name="employerPhone" placeholder="Employer Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                <input name="location" placeholder="Assigned Location" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
-                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-4">Save to Net Ten Ltd</button>
-                            </form>
-                        )}
-
-                        {editingClient && (
-                            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const d = Object.fromEntries(new FormData(e.target).entries());
-                                    db.ref(`clients/${editingClient.id}`).update({
-                                        ...d, amountOwed: parseFloat(d.amountOwed || 0), additionalFunds: parseFloat(d.additionalFunds || 0)
-                                    });
-                                    setEditingClient(null); alert("Updated!");
-                                }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-3 overflow-y-auto max-h-[90vh]">
-                                    <h3 className="text-xl font-black text-white uppercase italic">Edit Profile</h3>
-                                    <input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-xl text-white outline-none" />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input type="date" name="dateBorrowed" defaultValue={editingClient.dateBorrowed} className="w-full p-4 bg-[#0f172a] rounded-xl text-white outline-none text-xs" />
-                                        <input type="date" name="datePaid" defaultValue={editingClient.datePaid} className="w-full p-4 bg-[#0f172a] rounded-xl text-white outline-none text-xs" />
-                                    </div>
-                                    <textarea name="address" defaultValue={editingClient.address} className="w-full p-4 bg-[#0f172a] rounded-xl text-white h-20 outline-none" />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input name="amountOwed" type="number" defaultValue={editingClient.amountOwed} className="w-full p-4 bg-[#0f172a] rounded-xl text-white" />
-                                        <input name="additionalFunds" type="number" defaultValue={editingClient.additionalFunds} className="w-full p-4 bg-[#0f172a] rounded-xl text-white" />
-                                    </div>
-                                    <input name="employer" defaultValue={editingClient.employer} placeholder="Employer" className="w-full p-4 bg-[#0f172a] rounded-xl text-white" />
-                                    <input name="location" defaultValue={editingClient.location} placeholder="Location" className="w-full p-4 bg-[#0f172a] rounded-xl text-white" />
-                                    <div className="flex gap-2 pt-2">
-                                        <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-xl uppercase text-xs">Update</button>
-                                        <button type="button" onClick={() => {if(confirm("Delete Client?")){db.ref(`clients/${editingClient.id}`).remove(); setEditingClient(null);}}} className="px-5 bg-red-900/20 text-red-500 rounded-xl font-bold text-[10px]">DEL</button>
-                                    </div>
-                                    <button type="button" onClick={() => setEditingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px]">Close</button>
-                                </form>
-                            </div>
-                        )}
-                        {/* (Msg Target and Paying Client Modals same as before) */}
-                        {msgTarget && (
-                            <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
-                                <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 text-left space-y-4">
-                                    <h3 className="text-xl font-black text-white uppercase italic tracking-tight">Message to {msgTarget.name}</h3>
-                                    <textarea id="msgInput" placeholder="Enter message here..." className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white h-32 outline-none" />
-                                    <button onClick={() => {
-                                        const m = document.getElementById('msgInput').value;
-                                        db.ref(`clients/${msgTarget.id}`).update({ directMsg: m });
-                                        alert("Message Sent!"); setMsgTarget(null);
-                                    }} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase">Send Message</button>
-                                    <button onClick={() => setMsgTarget(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center">Cancel</button>
-                                </div>
-                            </div>
-                        )}
-                        {payingClient && (
-                            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const amt = parseFloat(e.target.payAmt.value);
-                                    db.ref(`clients/${payingClient.id}`).update({
-                                        amountOwed: payingClient.amountOwed - amt,
-                                        history: [...(payingClient.history || []), { amount: amt, date: e.target.payDate.value, method: e.target.payMethod.value, timestamp: Date.now() }]
-                                    });
-                                    setPayingClient(null); alert("Paid!");
-                                }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-4">
-                                    <h3 className="text-xl font-black text-white uppercase italic">Record Payment</h3>
-                                    <input type="number" name="payAmt" step="any" placeholder="Amount $" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required />
-                                    <input type="date" name="payDate" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required />
-                                    <select name="payMethod" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none">
-                                        <option value="Cash">Cash</option>
-                                        <option value="Bank Transfer">Bank Transfer</option>
-                                    </select>
-                                    <button type="submit" className="w-full bg-green-600 text-white font-black py-4 rounded-2xl uppercase">Confirm Payment</button>
-                                    <button type="button" onClick={() => setPayingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px]">Cancel</button>
-                                </form>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    myPortfolio ? (
-                        <div className="animate-in fade-in">
-                            {myPortfolio.directMsg && (
-                                <div className="mb-6 p-5 bg-blue-600 rounded-[32px] shadow-lg relative overflow-hidden">
-                                    <p className="text-[10px] font-black text-blue-100 uppercase mb-1">Message from Winston</p>
-                                    <p className="text-lg font-black text-white mb-4">{myPortfolio.directMsg}</p>
-                                    <button onClick={() => db.ref(`clients/${myPortfolio.id}`).update({directMsg: ""})} className="bg-white text-blue-600 px-6 py-2 rounded-xl font-black text-[10px] uppercase">Got it!</button>
-                                </div>
-                            )}
-
-                            <div className="flex bg-[#1e293b] p-1 rounded-2xl mb-6 border border-slate-700">
-                                <button onClick={() => setActiveClientTab('dash')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${activeClientTab === 'dash' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Dashboard</button>
-                                <button onClick={() => setActiveClientTab('history')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${activeClientTab === 'history' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>My History</button>
-                            </div>
-
-                            {activeClientTab === 'dash' ? (
-                                <div className="text-center">
-                                    <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl border border-slate-700 mb-6">
-                                        <p className="text-slate-500 font-bold text-xs uppercase mb-1 tracking-widest">Total Balance Owed</p>
-                                        <h2 className="text-5xl font-black text-white mb-8 tracking-tighter italic leading-none">${(parseFloat(myPortfolio.amountOwed || 0) + parseFloat(myPortfolio.additionalFunds || 0)).toFixed(2)}</h2>
-                                        <button onClick={() => setShowPayModal(true)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg uppercase text-sm">Make a Payment</button>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-[#1e293b] p-4 rounded-2xl border border-slate-700 text-left">
-                                            <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Borrowed Date</p>
-                                            <p className="font-black text-white text-[10px]">{myPortfolio.dateBorrowed || 'N/A'}</p>
-                                        </div>
-                                        <div className="bg-[#1e293b] p-4 rounded-2xl border border-slate-700 text-left">
-                                            <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Due Date</p>
-                                            <p className="font-black text-red-400 text-[10px]">{myPortfolio.datePaid || 'TBD'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-4 animate-in fade-in">
-                                    <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 text-left">
-                                        <h4 className="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Payment History</h4>
-                                        {myPortfolio.history ? (
-                                            <div className="space-y-3">
-                                                {myPortfolio.history.slice().reverse().map((h, i) => (
-                                                    <div key={i} className="flex justify-between items-center bg-[#0f172a] p-3 rounded-2xl">
-                                                        <div>
-                                                            <p className="font-black text-white text-sm">-${h.amount.toFixed(2)}</p>
-                                                            <p className="text-[9px] text-slate-500 uppercase font-bold">{h.date} • {h.method}</p>
-                                                        </div>
-                                                        <div className="text-[8px] font-black text-green-400 border border-green-900/30 px-2 py-1 rounded-lg uppercase tracking-tighter">Verified</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : <p className="text-slate-600 italic text-sm py-4">No payments recorded yet.</p>}
-                                    </div>
-
-                                    <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 text-left">
-                                        <h4 className="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">My Details</h4>
-                                        <p className="text-[11px] text-white font-medium mb-1"><span className="text-slate-500 uppercase text-[9px] font-black mr-2">Address:</span> {myPortfolio.address || 'Not set'}</p>
-                                        <p className="text-[11px] text-white font-medium"><span className="text-slate-500 uppercase text-[9px] font-black mr-2">Assigned:</span> {myPortfolio.location || 'N/A'}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {showPayModal && (
-                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f172a]/90 backdrop-blur-sm">
-                                    <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 text-left">
-                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-white uppercase italic">Payment Request</h3><button onClick={() => {setShowPayModal(false); setShowCalendar(false);}} className="text-slate-500 text-2xl">×</button></div>
-                                        <div className="space-y-4">
-                                            {!showCalendar ? (
-                                                <button onClick={() => setShowCalendar(true)} className="w-full p-6 bg-blue-900/20 border border-blue-500/30 rounded-2xl text-left">
-                                                    <p className="font-black text-blue-400 uppercase text-xs">Request Meeting</p>
-                                                    <p className="text-sm text-slate-400">Select a date and time to meet Winston and pay.</p>
-                                                </button>
-                                            ) : (
-                                                <form onSubmit={(e) => {
-                                                    e.preventDefault();
-                                                    const str = `${e.target.d.value} @ ${e.target.t.value}`;
-                                                    db.ref(`clients/${myPortfolio.id}`).update({ meetingRequest: str });
-                                                    alert("Request Sent to Winston!"); setShowPayModal(false); setShowCalendar(false);
-                                                }} className="space-y-3 animate-in slide-in-from-top-2">
-                                                    <input type="date" name="d" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" required />
-                                                    <input type="time" name="t" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" />
-                                                    <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg">Confirm Request</button>
-                                                </form>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : <div className="text-center p-10 text-slate-600 font-black uppercase tracking-widest animate-pulse">Loading Profile...</div>
-                )}
-            </main>
-        </div>
-    );
+// Logic for the Cash Flow Calculator
+const calculateTotals = () => {
+    return clients.reduce((acc, c) => {
+        const principal = parseFloat(c.amountOwed || 0);
+        const extra = parseFloat(c.additionalFunds || 0);
+        return {
+            principal: acc.principal + principal,
+            extra: acc.extra + extra,
+            total: acc.total + principal + extra
+        };
+    }, { principal: 0, extra: 0, total: 0 });
 };
 
+const totals = calculateTotals();
+
+// ... (Inside your return, update the Admin Home view section)
+
+{view === 'home' && (
+    <div className="animate-in fade-in">
+        {/* NEW: Cash Flow Calculator Card */}
+        <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-[32px] mb-8 shadow-2xl text-left border border-blue-400/30">
+            <p className="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em] mb-4">Business Overview</p>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <p className="text-[8px] font-bold text-blue-200 uppercase">Total Principal</p>
+                    <p className="text-xl font-black text-white">${totals.principal.toFixed(2)}</p>
+                </div>
+                <div>
+                    <p className="text-[8px] font-bold text-blue-200 uppercase">Total Top-Ups</p>
+                    <p className="text-xl font-black text-white">${totals.extra.toFixed(2)}</p>
+                </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-blue-400/30">
+                <p className="text-[9px] font-black text-blue-100 uppercase mb-1">Total Outstanding Cash Flow</p>
+                <p className="text-4xl font-black text-white italic tracking-tighter">${totals.total.toFixed(2)}</p>
+            </div>
+        </div>
+
+        <h2 className="text-[10px] font-black text-slate-500 uppercase ml-4 mb-4 tracking-widest">Active Portfolios ({clients.length})</h2>
+        
+        {clients.map(c => (
+            <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 text-left shadow-xl relative overflow-hidden">
+                {/* ... (Existing client card code stays the same) ... */}
+                <div className="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 className="font-black text-white text-lg">{c.name}</h3>
+                        <p className="text-[10px] text-blue-400 font-bold uppercase">{c.phone}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[9px] font-bold text-slate-500 uppercase">Balance</p>
+                        <p className="font-black text-lg text-green-400">${(parseFloat(c.amountOwed || 0) + parseFloat(c.additionalFunds || 0)).toFixed(2)}</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                    <button onClick={() => setPayingClient(c)} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Record Pay</button>
+                    <button onClick={() => setMsgTarget(c)} className="bg-blue-600 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Message</button>
+                    <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[8px] uppercase">Full Info</button>
+                </div>
+            </div>
+        ))}
+    </div>
+)}
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
