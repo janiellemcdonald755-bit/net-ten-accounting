@@ -66,7 +66,6 @@ const App = () => {
     const isAdmin = user?.email === ADMIN_EMAIL;
     const myPortfolio = clients.find(c => c.email?.toLowerCase() === user?.email?.toLowerCase());
 
-    // Enhanced Cash Flow Logic
     const totals = clients.reduce((acc, c) => {
         const p = parseFloat(c.amountOwed || 0);
         const a = parseFloat(c.additionalFunds || 0);
@@ -95,7 +94,7 @@ const App = () => {
             <header className="sticky top-0 z-50 bg-[#1e293b]/80 backdrop-blur-md p-5 border-b border-slate-700 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-8 h-8 object-contain" />
-                    <h1 className="text-md font-black text-white uppercase italic">Net Ten Ltd</h1>
+                    <h1 className="text-md font-black text-white uppercase italic text-sm">Net Ten Ltd</h1>
                 </div>
                 <button onClick={() => auth.signOut()} className="text-[9px] font-black text-red-400 border border-red-900/50 px-3 py-1 rounded-full uppercase">Logout</button>
             </header>
@@ -154,6 +153,10 @@ const App = () => {
                                     <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" required />
                                     <input name="email" placeholder="Email (Optional)" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" />
                                 </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1"><label className="text-[8px] font-black text-slate-500 uppercase ml-2">Borrowed Date</label><input type="date" name="dateBorrowed" className="w-full p-3 bg-[#0f172a] rounded-2xl border border-slate-700 text-white text-xs" /></div>
+                                    <div className="space-y-1"><label className="text-[8px] font-black text-slate-500 uppercase ml-2">Due Date</label><input type="date" name="datePaid" className="w-full p-3 bg-[#0f172a] rounded-2xl border border-slate-700 text-white text-xs" /></div>
+                                </div>
                                 <div className="grid grid-cols-3 gap-2">
                                     <input name="amountOwed" type="number" step="any" placeholder="Loan $" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs outline-none" />
                                     <input name="additionalFunds" type="number" step="any" placeholder="Top Up $" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs outline-none" />
@@ -178,6 +181,10 @@ const App = () => {
                                 }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-3 overflow-y-auto max-h-[90vh]">
                                     <h3 className="text-xl font-black text-white uppercase italic">Edit Details</h3>
                                     <input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-xl text-white outline-none" />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-1">Date Borrowed</label><input type="date" name="dateBorrowed" defaultValue={editingClient.dateBorrowed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
+                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-1">Due Date</label><input type="date" name="datePaid" defaultValue={editingClient.datePaid} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
+                                    </div>
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-1">Loan</label><input name="amountOwed" type="number" step="any" defaultValue={editingClient.amountOwed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
                                         <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-1">TopUp</label><input name="additionalFunds" type="number" step="any" defaultValue={editingClient.additionalFunds} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
@@ -190,7 +197,7 @@ const App = () => {
                                     </div>
                                     <div className="flex gap-2 pt-2">
                                         <button type="submit" className="flex-1 bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Update</button>
-                                        <button type="button" onClick={() => {if(confirm("Delete Portfolio?")){db.ref(`clients/${editingClient.id}`).remove(); setEditingClient(null);}}} className="px-5 bg-red-900/20 text-red-500 rounded-xl font-bold">DEL</button>
+                                        <button type="button" onClick={() => {if(confirm("Delete?")){db.ref(`clients/${editingClient.id}`).remove(); setEditingClient(null);}}} className="px-5 bg-red-900/20 text-red-500 rounded-xl font-bold">DEL</button>
                                     </div>
                                     <button type="button" onClick={() => setEditingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px]">Close</button>
                                 </form>
@@ -202,7 +209,6 @@ const App = () => {
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
                                     const amt = parseFloat(e.target.payAmt.value);
-                                    // Math: Subtract payment from principal first, then topup, then interest
                                     db.ref(`clients/${payingClient.id}`).update({
                                         amountOwed: Math.max(0, payingClient.amountOwed - amt),
                                         history: [...(payingClient.history || []), { amount: amt, date: e.target.payDate.value, method: e.target.payMethod.value, timestamp: Date.now() }]
@@ -217,7 +223,7 @@ const App = () => {
                                 </form>
                             </div>
                         )}
-                        {/* (Message modal same as previous) */}
+
                         {msgTarget && (
                             <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
                                 <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 text-left space-y-4">
@@ -246,6 +252,10 @@ const App = () => {
                                         <p className="text-slate-500 font-bold text-xs uppercase mb-1 tracking-widest">Total Balance Owed</p>
                                         <h2 className="text-5xl font-black text-white mb-8 italic">${(parseFloat(myPortfolio.amountOwed || 0) + parseFloat(myPortfolio.additionalFunds || 0) + parseFloat(myPortfolio.interestAmount || 0)).toFixed(2)}</h2>
                                         <button onClick={() => setShowPayModal(true)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-sm shadow-xl">Make a Payment</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div className="bg-[#1e293b] p-4 rounded-2xl border border-slate-700 text-left"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">Borrowed Date</p><p className="font-black text-white text-[10px]">{myPortfolio.dateBorrowed || 'N/A'}</p></div>
+                                        <div className="bg-[#1e293b] p-4 rounded-2xl border border-slate-700 text-left"><p className="text-[8px] font-black text-red-500 uppercase mb-1">Due Date</p><p className="font-black text-red-400 text-[10px]">{myPortfolio.datePaid || 'TBD'}</p></div>
                                     </div>
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="bg-[#1e293b] p-3 rounded-2xl border border-slate-700 text-left"><p className="text-[7px] font-black text-slate-500 uppercase mb-1">Principal</p><p className="font-black text-white text-[9px]">${parseFloat(myPortfolio.amountOwed || 0).toFixed(0)}</p></div>
