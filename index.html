@@ -61,7 +61,7 @@ const App = () => {
     const handleLogin = (e) => {
         e.preventDefault();
         let finalEmail = loginId.includes('@') ? loginId : `${loginId.replace(/[^0-9]/g, '')}@netten.com`;
-        auth.signInWithEmailAndPassword(finalEmail, password).catch(err => alert("Login failed."));
+        auth.signInWithEmailAndPassword(finalEmail, password).catch(err => alert("Login failed. Check credentials."));
     };
 
     const isAdmin = user?.email === ADMIN_EMAIL;
@@ -76,7 +76,7 @@ const App = () => {
         c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone?.includes(searchTerm)
     );
 
-    // Record Pay Math
+    // Modal Math
     const currentOwed = payingClient ? (parseFloat(payingClient.interestAmount || 0) + parseFloat(payingClient.additionalFunds || 0)) : 0;
     const remaining = currentOwed - (parseFloat(payAmt) || 0);
 
@@ -84,7 +84,7 @@ const App = () => {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-[#0f172a]">
                 <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border border-slate-700">
-                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" />
+                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" alt="logo" />
                     <h1 className="text-3xl font-black text-blue-400 mb-2 uppercase italic tracking-tighter">Net Ten Ltd</h1>
                     <form onSubmit={handleLogin} className="space-y-4 mt-6">
                         <input type="text" placeholder="Phone or Email" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setLoginId(e.target.value)} />
@@ -100,7 +100,7 @@ const App = () => {
         <div className="min-h-screen pb-24 bg-[#0f172a] text-slate-200 font-sans">
             <header className="sticky top-0 z-50 bg-[#1e293b]/80 backdrop-blur-md p-5 border-b border-slate-700 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-8 h-8 object-contain" />
+                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-8 h-8 object-contain" alt="logo" />
                     <h1 className="text-md font-black text-white uppercase italic text-sm">Net Ten Ltd</h1>
                 </div>
                 <button onClick={() => auth.signOut()} className="text-[9px] font-black text-red-400 border border-red-900/50 px-3 py-1 rounded-full uppercase">Logout</button>
@@ -118,10 +118,10 @@ const App = () => {
                         {view === 'home' && (
                             <>
                                 <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-[32px] mb-6 shadow-2xl border border-blue-400/30">
-                                    <p className="text-[10px] font-black text-blue-100 uppercase mb-1">Current Active Owed</p>
+                                    <p className="text-[10px] font-black text-blue-100 uppercase mb-1">Active Outstanding</p>
                                     <p className="text-4xl font-black text-white italic tracking-tighter">${activeTotalOut.toFixed(2)}</p>
                                 </div>
-                                <input type="text" placeholder="Search..." className="w-full p-4 mb-6 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={(e) => setSearchTerm(e.target.value)} />
+                                <input type="text" placeholder="Search portfolios..." className="w-full p-4 mb-6 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={(e) => setSearchTerm(e.target.value)} />
                                 {filteredClients.map(c => (
                                     <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 shadow-xl">
                                         <div className="flex justify-between items-start">
@@ -153,14 +153,14 @@ const App = () => {
                         {view === 'history' && (
                             <div className="animate-in slide-in-from-bottom">
                                 <div className="bg-green-900/20 border border-green-900/30 p-6 rounded-[32px] mb-6 text-center shadow-2xl">
-                                    <p className="text-green-500 font-black text-[10px] uppercase mb-1">Total Collected To Date</p>
+                                    <p className="text-green-500 font-black text-[10px] uppercase mb-1">Lifetime Collections</p>
                                     <p className="text-4xl font-black text-white italic tracking-tighter">${totalCollected.toFixed(2)}</p>
                                 </div>
                                 <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700">
-                                    <h2 className="text-xs font-black text-slate-500 uppercase mb-4">Payment Log</h2>
+                                    <h2 className="text-xs font-black text-slate-500 uppercase mb-4 tracking-widest">Payment History Log</h2>
                                     <div className="space-y-3">
                                         {allHistory.map((h, i) => (
-                                            <div key={i} className="flex justify-between items-center p-4 bg-[#0f172a] rounded-2xl border border-slate-800">
+                                            <div key={i} className="flex justify-between items-center p-4 bg-[#0f172a] rounded-2xl border border-slate-800 shadow-sm">
                                                 <div>
                                                     <p className="text-blue-400 font-black text-[10px] uppercase">{h.clientName}</p>
                                                     <p className="text-[8px] text-slate-500 font-bold uppercase">{h.date} via {h.method || 'Cash'}</p>
@@ -179,20 +179,20 @@ const App = () => {
                                 const d = Object.fromEntries(new FormData(e.target).entries());
                                 const email = d.email || `${d.phone.replace(/[^0-9]/g, '')}@netten.com`;
                                 await db.ref('clients').push({...d, email, interestAmount: parseFloat(d.interestAmount || 0), additionalFunds: parseFloat(d.additionalFunds || 0), amountOwed: parseFloat(d.amountOwed || 0)});
-                                alert("Added!"); setView('home');
-                            }} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-3">
+                                alert("Success!"); setView('home');
+                            }} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-3 shadow-2xl">
                                 <h2 className="text-lg font-black text-white uppercase italic">New Portfolio</h2>
-                                <input name="name" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required />
+                                <input name="name" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" required />
                                 <div className="grid grid-cols-2 gap-3">
-                                    <input name="phone" placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required />
-                                    <input name="email" placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" />
+                                    <input name="phone" placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" required />
+                                    <input name="email" placeholder="Email (Optional)" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" />
                                 </div>
                                 <div className="grid grid-cols-3 gap-2">
                                     <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-2">Principal</label><input name="amountOwed" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" /></div>
                                     <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-2">Top-Up</label><input name="additionalFunds" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" /></div>
                                     <div className="space-y-1"><label className="text-[7px] text-green-500 uppercase ml-2">Interest</label><input name="interestAmount" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-green-900/30" required /></div>
                                 </div>
-                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-2 shadow-lg">Create Profile</button>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-2 shadow-lg tracking-widest">Create Profile</button>
                             </form>
                         )}
 
@@ -208,5 +208,85 @@ const App = () => {
                                         <button onClick={() => setPayMethod('Bank Transfer')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase ${payMethod === 'Bank Transfer' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Bank</button>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <button onClick={() => setPayAmt(currentOwed.toFixed(2))} className="bg-green-900/20 text-green-400 border border-green-900/50 py-3 rounded-2xl font-black text-[9px] uppercase">Full Payoff</button>
-                                        <button onClick={() => setPayAmt(parseFloat(payingClient.interestAmount || 0).toFixed(2))} className="bg-blue-900/20 text-blue-400 border border-blue-900/50 py-
+                                        <button onClick={() => setPayAmt(currentOwed.toFixed(2))} className="bg-green-900/20 text-green-400 border border-green-900/50 py-3 rounded-2xl font-black text-[9px] uppercase shadow-sm">Full Payoff</button>
+                                        <button onClick={() => setPayAmt(parseFloat(payingClient.interestAmount || 0).toFixed(2))} className="bg-blue-900/20 text-blue-400 border border-blue-900/50 py-3 rounded-2xl font-black text-[9px] uppercase shadow-sm">Roll Interest</button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="relative">
+                                            <input type="number" value={payAmt} onChange={(e) => setPayAmt(e.target.value)} placeholder="0.00" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xl font-black outline-none border border-slate-700" />
+                                            <span className="absolute right-5 top-5 text-slate-500 font-black">$</span>
+                                        </div>
+                                        <div className="bg-[#0f172a] p-4 rounded-2xl border border-dashed border-slate-800 text-[10px] font-black uppercase flex justify-between">
+                                            <span className="text-slate-500">New Balance:</span>
+                                            <span className={remaining <= 0 ? 'text-green-400' : 'text-orange-400'}>${remaining.toFixed(2)}</span>
+                                        </div>
+                                        <input type="date" id="pDate" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-700" />
+                                    </div>
+                                    <button onClick={() => {
+                                        const amt = parseFloat(payAmt); if(!amt) return alert("Enter amount");
+                                        let rem = amt; let ni = payingClient.interestAmount || 0; let nt = payingClient.additionalFunds || 0;
+                                        if (rem <= ni) { ni -= rem; rem = 0; } else { rem -= ni; ni = 0; nt = Math.max(0, nt - rem); }
+                                        const hObj = { amount: amt, date: document.getElementById('pDate').value, method: payMethod, timestamp: Date.now() };
+                                        db.ref(`clients/${payingClient.id}`).update({ interestAmount: ni, additionalFunds: nt, history: [...(payingClient.history || []), hObj] });
+                                        setPayingClient(null); alert("Confirmed!");
+                                    }} className="w-full bg-green-600 text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl">Post Payment</button>
+                                    <button onClick={() => setPayingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center">Cancel</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {editingClient && (
+                            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const d = Object.fromEntries(new FormData(e.target).entries());
+                                    db.ref(`clients/${editingClient.id}`).update({...d, interestAmount: parseFloat(d.interestAmount || 0), additionalFunds: parseFloat(d.additionalFunds || 0), amountOwed: parseFloat(d.amountOwed || 0)});
+                                    setEditingClient(null); alert("Updated!");
+                                }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-3 overflow-y-auto max-h-[90vh] shadow-2xl">
+                                    <h3 className="text-xl font-black text-white uppercase italic">Edit Details</h3>
+                                    <input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input name="phone" defaultValue={editingClient.phone} className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
+                                        <input name="email" defaultValue={editingClient.email} className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-1">Principal</label><input name="amountOwed" defaultValue={editingClient.amountOwed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-700" /></div>
+                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-1">TopUp</label><input name="additionalFunds" defaultValue={editingClient.additionalFunds} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-700" /></div>
+                                        <div className="space-y-1"><label className="text-[7px] text-green-500 uppercase ml-1">Interest</label><input name="interestAmount" defaultValue={editingClient.interestAmount} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-green-900/50 shadow-inner" /></div>
+                                    </div>
+                                    <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg mt-2 tracking-widest">Update Info</button>
+                                    <button type="button" onClick={() => { if(confirm("Delete this client forever?")) { db.ref(`clients/${editingClient.id}`).remove(); setEditingClient(null); } }} className="w-full bg-red-900/20 text-red-500 border border-red-900/50 font-black py-3 rounded-xl uppercase text-[10px] mt-2">Delete Client</button>
+                                    <button type="button" onClick={() => setEditingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center pt-2">Cancel</button>
+                                </form>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    myPortfolio ? (
+                        <div className="animate-in fade-in">
+                            <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl border border-slate-700 mb-6 text-center">
+                                <p className="text-slate-500 font-bold text-xs uppercase mb-1 tracking-widest">My Current Balance</p>
+                                <h2 className="text-5xl font-black text-green-400 mb-8 italic tracking-tighter">${(parseFloat(myPortfolio.interestAmount || 0) + parseFloat(myPortfolio.additionalFunds || 0)).toFixed(2)}</h2>
+                                <button className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-sm shadow-xl tracking-widest">Request Payment Info</button>
+                            </div>
+                            <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 text-left mb-6 shadow-xl">
+                                <h3 className="text-xs font-black text-blue-400 uppercase mb-4 tracking-widest">Receipt History</h3>
+                                <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+                                    {(myPortfolio.history || []).sort((a,b) => b.timestamp - a.timestamp).map((h, i) => (
+                                        <div key={i} className="flex justify-between items-center py-2 border-b border-slate-700/30">
+                                            <div><p className="text-white font-black text-xs">${parseFloat(h.amount).toFixed(2)}</p><p className="text-[8px] text-slate-500 font-bold uppercase">{h.date} via {h.method || 'Cash'}</p></div>
+                                            <div className="text-[7px] font-black text-green-500/50 uppercase italic tracking-widest">Verified</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ) : <div className="text-center p-10 text-slate-600 font-black uppercase tracking-widest animate-pulse">Syncing Cloud Profile...</div>
+                )}
+            </main>
+        </div>
+    );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
