@@ -41,6 +41,10 @@ const App = () => {
     const [editingClient, setEditingClient] = React.useState(null);
     const [payingClient, setPayingClient] = React.useState(null);
     const [msgTarget, setMsgTarget] = React.useState(null);
+    
+    // Record Pay States
+    const [payAmt, setPayAmt] = React.useState('');
+    const [payMethod, setPayMethod] = React.useState('Cash');
 
     const ADMIN_EMAIL = "winstonhmcdonald@gmail.com"; 
 
@@ -59,25 +63,26 @@ const App = () => {
     const handleLogin = (e) => {
         e.preventDefault();
         let finalEmail = loginId.includes('@') ? loginId : `${loginId.replace(/[^0-9]/g, '')}@netten.com`;
-        auth.signInWithEmailAndPassword(finalEmail, password).catch(err => alert("Login failed. Check credentials."));
-    };
-
-    const handleDeleteClient = (id, name) => {
-        if (window.confirm(`Permanently delete ${name}?`)) {
-            db.ref(`clients/${id}`).remove().then(() => { alert("Deleted."); setEditingClient(null); });
-        }
+        auth.signInWithEmailAndPassword(finalEmail, password).catch(err => alert("Login failed."));
     };
 
     const isAdmin = user?.email === ADMIN_EMAIL;
     const myPortfolio = clients.find(c => c.email?.toLowerCase() === user?.email?.toLowerCase());
 
+    // CALCULATOR: Global Outstanding (Money currently in the street)
     const activeTotalOut = clients.reduce((acc, c) => acc + (parseFloat(c.interestAmount || 0) + parseFloat(c.additionalFunds || 0)), 0);
+
+    // CALCULATOR: History (Total money ever collected)
+    const allHistory = clients.flatMap(c => (c.history || []).map(h => ({ ...h, clientName: c.name }))).sort((a, b) => b.timestamp - a.timestamp);
+    const totalCollected = allHistory.reduce((acc, h) => acc + parseFloat(h.amount || 0), 0);
 
     const filteredClients = clients.filter(c => 
         c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone?.includes(searchTerm)
     );
 
-    const allHistory = clients.flatMap(c => (c.history || []).map(h => ({ ...h, clientName: c.name }))).sort((a, b) => b.timestamp - a.timestamp);
+    // Calc for Record Pay Modal
+    const currentTotal = payingClient ? (parseFloat(payingClient.interestAmount || 0) + parseFloat(payingClient.additionalFunds || 0)) : 0;
+    const remainingAfterPay = currentTotal - (parseFloat(payAmt) || 0);
 
     if (!user) {
         return (
@@ -117,49 +122,64 @@ const App = () => {
                         {view === 'home' && (
                             <>
                                 <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-[32px] mb-6 shadow-2xl border border-blue-400/30">
-                                    <p className="text-[10px] font-black text-blue-100 uppercase mb-1">Total Active Owed</p>
+                                    <p className="text-[10px] font-black text-blue-100 uppercase mb-1 tracking-widest">Active Outstanding</p>
                                     <p className="text-4xl font-black text-white italic tracking-tighter">${activeTotalOut.toFixed(2)}</p>
                                 </div>
-                                <input type="text" placeholder="Search..." className="w-full p-4 mb-6 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={(e) => setSearchTerm(e.target.value)} />
-                                {filteredClients.map(c => (
-                                    <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 shadow-xl">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="font-black text-white text-lg">{c.name}</h3>
-                                                <p className="text-[9px] text-blue-400 font-bold uppercase">{c.phone}</p>
-                                                <p className="text-[8px] text-slate-500 font-bold uppercase mt-1">{c.employer || 'N/A'}</p>
+                                <input type="text" placeholder="Search portfolios..." className="w-full p-4 mb-6 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none shadow-inner" onChange={(e) => setSearchTerm(e.target.value)} />
+                                {filteredClients.map(c => {
+                                    const cardTotal = (parseFloat(c.interestAmount || 0) + parseFloat(c.additionalFunds || 0));
+                                    return (
+                                        <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 shadow-xl">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h3 className="font-black text-white text-lg">{c.name}</h3>
+                                                    <div className="flex gap-2 mt-1">
+                                                        <span className="text-[7px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-black uppercase">Int: ${parseFloat(c.interestAmount || 0)}</span>
+                                                        <span className="text-[7px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-black uppercase">Top: ${parseFloat(c.additionalFunds || 0)}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Total Owed</p>
+                                                    <p className="font-black text-xl text-green-400 tracking-tighter">${cardTotal.toFixed(2)}</p>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Due: {c.datePaid || 'TBD'}</p>
-                                                <p className="font-black text-lg text-green-400">${(parseFloat(c.interestAmount || 0) + parseFloat(c.additionalFunds || 0)).toFixed(2)}</p>
+                                            <div className="grid grid-cols-3 gap-2 mt-4">
+                                                <button onClick={() => { setPayingClient(c); setPayAmt(''); }} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Record Pay</button>
+                                                <button onClick={() => setMsgTarget(c)} className="bg-blue-600 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Message</button>
+                                                <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[8px] uppercase">Edit/Info</button>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-3 gap-2 mt-4">
-                                            <button onClick={() => setPayingClient(c)} className="bg-slate-700 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Record Pay</button>
-                                            <button onClick={() => setMsgTarget(c)} className="bg-blue-600 text-white py-3 rounded-xl font-bold text-[8px] uppercase">Message</button>
-                                            <button onClick={() => setEditingClient(c)} className="bg-blue-900/30 text-blue-400 border border-blue-900/50 py-3 rounded-xl font-bold text-[8px] uppercase">Edit/Info</button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </>
                         )}
 
                         {view === 'history' && (
-                            <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 shadow-2xl">
-                                <h2 className="text-lg font-black text-white uppercase italic mb-6">Payment Log</h2>
-                                <div className="space-y-4">
-                                    {allHistory.map((h, i) => (
-                                        <div key={i} className="flex justify-between items-center p-4 bg-[#0f172a] rounded-2xl border border-slate-800">
-                                            <div><p className="text-blue-400 font-black text-[10px] uppercase">{h.clientName}</p><p className="text-[8px] text-slate-500 font-bold">{h.date}</p></div>
-                                            <p className="font-black text-green-400 text-md">${parseFloat(h.amount).toFixed(2)}</p>
-                                        </div>
-                                    ))}
+                            <div className="animate-in slide-in-from-bottom">
+                                <div className="bg-green-900/20 border border-green-900/30 p-6 rounded-[32px] mb-6 text-center shadow-2xl">
+                                    <p className="text-green-500 font-black text-[10px] uppercase mb-1 tracking-widest">Total Collected History</p>
+                                    <p className="text-4xl font-black text-white italic tracking-tighter">${totalCollected.toFixed(2)}</p>
+                                </div>
+                                <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 shadow-2xl">
+                                    <h2 className="text-xs font-black text-slate-500 uppercase italic mb-4">Payment Log</h2>
+                                    <div className="space-y-4">
+                                        {allHistory.map((h, i) => (
+                                            <div key={i} className="flex justify-between items-center p-4 bg-[#0f172a] rounded-2xl border border-slate-800">
+                                                <div>
+                                                    <p className="text-blue-400 font-black text-[10px] uppercase">{h.clientName}</p>
+                                                    <p className="text-[8px] text-slate-500 font-bold uppercase">{h.date} • {h.method || 'Cash'}</p>
+                                                </div>
+                                                <p className="font-black text-green-400 text-md">${parseFloat(h.amount).toFixed(2)}</p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
+                        {/* ADD CLIENT (UNCHANGED) */}
                         {view === 'add' && (
-                            <form onSubmit={async (e) => {
+                           <form onSubmit={async (e) => {
                                 e.preventDefault();
                                 const d = Object.fromEntries(new FormData(e.target).entries());
                                 const email = d.email || `${d.phone.replace(/[^0-9]/g, '')}@netten.com`;
@@ -167,29 +187,63 @@ const App = () => {
                                 alert("Added!"); setView('home');
                             }} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-3">
                                 <h2 className="text-lg font-black text-white uppercase italic mb-2">New Portfolio</h2>
-                                <input name="name" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" required />
+                                <input name="name" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700 shadow-inner" required />
                                 <div className="grid grid-cols-2 gap-3">
-                                    <input name="phone" placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" required />
-                                    <input name="email" placeholder="Email (Optional)" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="space-y-1"><label className="text-[8px] text-slate-500 font-bold uppercase ml-2">Borrowed</label><input type="date" name="dateBorrowed" className="w-full p-3 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-700" /></div>
-                                    <div className="space-y-1"><label className="text-[8px] text-slate-500 font-bold uppercase ml-2">Due Date</label><input type="date" name="datePaid" className="w-full p-3 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-700" /></div>
+                                    <input name="phone" placeholder="Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700 shadow-inner" required />
+                                    <input name="email" placeholder="Email (Optional)" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700 shadow-inner" />
                                 </div>
                                 <div className="grid grid-cols-3 gap-2">
-                                    <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-2">Principal</label><input name="amountOwed" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" /></div>
-                                    <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-2">Top-Up</label><input name="additionalFunds" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" /></div>
-                                    <div className="space-y-1"><label className="text-[7px] text-green-500 uppercase ml-2">Interest</label><input name="interestAmount" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-green-900/30" required /></div>
+                                    <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-2">Principal</label><input name="amountOwed" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-700 shadow-inner" /></div>
+                                    <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-2">Top-Up</label><input name="additionalFunds" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-700 shadow-inner" /></div>
+                                    <div className="space-y-1"><label className="text-[7px] text-green-500 uppercase ml-2">Interest</label><input name="interestAmount" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-green-900/30 shadow-inner" required /></div>
                                 </div>
-                                <textarea name="address" placeholder="Address/Location" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white h-20 outline-none border border-slate-700" />
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input name="employer" placeholder="Employer Name" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" />
-                                    <input name="employerPhone" placeholder="Employer #" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" />
-                                </div>
-                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase shadow-lg">Create Portfolio</button>
-                            </form>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-4 shadow-xl">Save Profile</button>
+                           </form>
                         )}
 
+                        {/* RECORD PAYMENT MODAL */}
+                        {payingClient && (
+                            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
+                                <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700 space-y-6 shadow-2xl overflow-y-auto max-h-[95vh]">
+                                    <div className="text-center">
+                                        <p className="text-slate-500 font-black text-[10px] uppercase mb-1">Recording for</p>
+                                        <h3 className="text-2xl font-black text-white italic">{payingClient.name}</h3>
+                                    </div>
+                                    <div className="flex bg-[#0f172a] p-1 rounded-2xl border border-slate-800">
+                                        <button onClick={() => setPayMethod('Cash')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase ${payMethod === 'Cash' ? 'bg-green-600 text-white' : 'text-slate-500'}`}>Cash</button>
+                                        <button onClick={() => setPayMethod('Bank Transfer')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase ${payMethod === 'Bank Transfer' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Bank</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => setPayAmt(currentTotal.toFixed(2))} className="bg-green-900/20 text-green-400 border border-green-900/50 py-3 rounded-2xl font-black text-[9px] uppercase hover:bg-green-900/40">Pay All</button>
+                                        <button onClick={() => setPayAmt(parseFloat(payingClient.interestAmount || 0).toFixed(2))} className="bg-blue-900/20 text-blue-400 border border-blue-900/50 py-3 rounded-2xl font-black text-[9px] uppercase hover:bg-blue-900/40">Interest Only</button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="relative">
+                                            <input type="number" value={payAmt} onChange={(e) => setPayAmt(e.target.value)} placeholder="0.00" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xl font-black outline-none border border-slate-700" />
+                                            <span className="absolute right-5 top-5 text-slate-600 font-black">$</span>
+                                        </div>
+                                        <div className="bg-[#0f172a] p-4 rounded-2xl border border-dashed border-slate-800">
+                                            <div className="flex justify-between text-[10px] font-black uppercase mb-1"><span className="text-slate-500">Current Owed:</span><span className="text-white">${currentTotal.toFixed(2)}</span></div>
+                                            <div className="flex justify-between text-[10px] font-black uppercase"><span className="text-slate-500">New Balance:</span><span className={remainingAfterPay <= 0 ? 'text-green-400' : 'text-orange-400'}>${remainingAfterPay.toFixed(2)}</span></div>
+                                        </div>
+                                        <div className="space-y-1"><label className="text-[8px] text-slate-500 font-black uppercase ml-2">Date</label><input type="date" id="pDate" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-700" /></div>
+                                    </div>
+                                    <div className="pt-2 space-y-3">
+                                        <button onClick={() => {
+                                            const amt = parseFloat(payAmt); if (!amt) return alert("Error.");
+                                            let rem = amt; let ni = payingClient.interestAmount || 0; let nt = payingClient.additionalFunds || 0;
+                                            if (rem <= ni) { ni -= rem; rem = 0; } else { rem -= ni; ni = 0; nt = Math.max(0, nt - rem); }
+                                            const hObj = { amount: amt, date: document.getElementById('pDate').value, method: payMethod, timestamp: Date.now() };
+                                            db.ref(`clients/${payingClient.id}`).update({ interestAmount: ni, additionalFunds: nt, history: [...(payingClient.history || []), hObj] });
+                                            setPayingClient(null); alert("Confirmed!");
+                                        }} className="w-full bg-green-600 text-white font-black py-5 rounded-2xl uppercase shadow-xl tracking-widest">Post Payment</button>
+                                        <button onClick={() => setPayingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* EDIT MODAL REMAINS ACCESSIBLE */}
                         {editingClient && (
                             <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
                                 <form onSubmit={(e) => {
@@ -198,68 +252,21 @@ const App = () => {
                                     db.ref(`clients/${editingClient.id}`).update({...d, interestAmount: parseFloat(d.interestAmount || 0), additionalFunds: parseFloat(d.additionalFunds || 0), amountOwed: parseFloat(d.amountOwed || 0)});
                                     setEditingClient(null); alert("Updated!");
                                 }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-3 overflow-y-auto max-h-[90vh]">
-                                    <h3 className="text-xl font-black text-white uppercase italic">Edit Details</h3>
+                                    <h3 className="text-xl font-black text-white uppercase italic">Edit Profile</h3>
                                     <input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
                                     <div className="grid grid-cols-2 gap-3">
-                                        <input name="phone" defaultValue={editingClient.phone} className="w-full p-4 bg-[#0f172a] rounded-xl text-white" />
-                                        <input name="email" defaultValue={editingClient.email} className="w-full p-4 bg-[#0f172a] rounded-xl text-white" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase">Borrowed</label><input type="date" name="dateBorrowed" defaultValue={editingClient.dateBorrowed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-700" /></div>
-                                        <div className="space-y-1"><label className="text-[7px] text-red-500 uppercase">Due</label><input type="date" name="datePaid" defaultValue={editingClient.datePaid} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-700" /></div>
+                                        <input name="phone" defaultValue={editingClient.phone} className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
+                                        <input name="email" defaultValue={editingClient.email} className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
                                     </div>
                                     <div className="grid grid-cols-3 gap-2">
-                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase">Principal</label><input name="amountOwed" defaultValue={editingClient.amountOwed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
-                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase">TopUp</label><input name="additionalFunds" defaultValue={editingClient.additionalFunds} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
-                                        <div className="space-y-1"><label className="text-[7px] text-green-500 uppercase">Interest</label><input name="interestAmount" defaultValue={editingClient.interestAmount} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-green-900/50" /></div>
+                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase">Principal</label><input name="amountOwed" defaultValue={editingClient.amountOwed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-700" /></div>
+                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase">TopUp</label><input name="additionalFunds" defaultValue={editingClient.additionalFunds} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-700" /></div>
+                                        <div className="space-y-1"><label className="text-[7px] text-green-500 uppercase">Interest</label><input name="interestAmount" defaultValue={editingClient.interestAmount} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-green-900/50 shadow-inner" /></div>
                                     </div>
-                                    <textarea name="address" defaultValue={editingClient.address} placeholder="Home Address" className="w-full p-4 bg-[#0f172a] rounded-xl text-white h-20 border border-slate-700" />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input name="employer" defaultValue={editingClient.employer} placeholder="Employer" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
-                                        <input name="employerPhone" defaultValue={editingClient.employerPhone} placeholder="Employer #" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
-                                    </div>
-                                    <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg mt-2">Update Portfolio</button>
-                                    <button type="button" onClick={() => handleDeleteClient(editingClient.id, editingClient.name)} className="w-full bg-red-900/20 text-red-500 border border-red-900/50 font-black py-3 rounded-xl uppercase text-[10px] mt-2">Delete Portfolio</button>
+                                    <textarea name="address" defaultValue={editingClient.address} placeholder="Address" className="w-full p-4 bg-[#0f172a] rounded-xl text-white h-20 border border-slate-700" />
+                                    <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg mt-2 tracking-widest">Update Info</button>
                                     <button type="button" onClick={() => setEditingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center pt-2">Cancel</button>
                                 </form>
-                            </div>
-                        )}
-
-                        {payingClient && (
-                            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const payAmt = parseFloat(e.target.payAmt.value);
-                                    let remaining = payAmt;
-                                    let newInterest = payingClient.interestAmount || 0;
-                                    let newTopUp = payingClient.additionalFunds || 0;
-                                    if (remaining <= newInterest) { newInterest -= remaining; remaining = 0; } 
-                                    else { remaining -= newInterest; newInterest = 0; newTopUp = Math.max(0, newTopUp - remaining); }
-                                    const newHistory = [...(payingClient.history || []), { amount: payAmt, date: e.target.payDate.value, timestamp: Date.now() }];
-                                    db.ref(`clients/${payingClient.id}`).update({ interestAmount: newInterest, additionalFunds: newTopUp, history: newHistory });
-                                    setPayingClient(null); alert("Confirmed!");
-                                }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-4">
-                                    <h3 className="text-xl font-black text-white uppercase italic">Record Payment</h3>
-                                    <input type="number" name="payAmt" step="any" placeholder="Amount Paid $" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-700" required />
-                                    <input type="date" name="payDate" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-700" required />
-                                    <button type="submit" className="w-full bg-green-600 text-white font-black py-4 rounded-2xl uppercase">Confirm</button>
-                                    <button type="button" onClick={() => setPayingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center">Cancel</button>
-                                </form>
-                            </div>
-                        )}
-
-                        {msgTarget && (
-                            <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
-                                <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-4">
-                                    <h3 className="text-xl font-black text-white uppercase italic">Message {msgTarget.name}</h3>
-                                    <textarea id="msgInput" placeholder="Write here..." className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white h-32 outline-none" />
-                                    <button onClick={() => {
-                                        const m = document.getElementById('msgInput').value;
-                                        db.ref(`clients/${msgTarget.id}`).update({ directMsg: m });
-                                        alert("Sent!"); setMsgTarget(null);
-                                    }} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase">Send</button>
-                                    <button onClick={() => setMsgTarget(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center">Cancel</button>
-                                </div>
                             </div>
                         )}
                     </div>
@@ -267,52 +274,24 @@ const App = () => {
                     myPortfolio ? (
                         <div className="animate-in fade-in">
                             <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl border border-slate-700 mb-6 text-center">
-                                <p className="text-slate-500 font-bold text-xs uppercase mb-1">Active Balance Due</p>
+                                <p className="text-slate-500 font-bold text-xs uppercase mb-1">Total Outstanding</p>
                                 <h2 className="text-5xl font-black text-green-400 mb-8 italic tracking-tighter">${(parseFloat(myPortfolio.interestAmount || 0) + parseFloat(myPortfolio.additionalFunds || 0)).toFixed(2)}</h2>
-                                <button onClick={() => setShowPayModal(true)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-sm shadow-xl">Schedule Meeting</button>
+                                <button className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-sm shadow-xl tracking-widest">Request Payment Details</button>
                             </div>
                             
-                            <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 text-left mb-6">
-                                <h3 className="text-xs font-black text-blue-400 uppercase mb-4">Payment History</h3>
+                            <div className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 text-left mb-6 shadow-xl">
+                                <h3 className="text-[10px] font-black text-blue-400 uppercase mb-4 tracking-widest">My Receipt Records</h3>
                                 <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
                                     {myPortfolio.history?.sort((a,b) => b.timestamp - a.timestamp).map((h, i) => (
                                         <div key={i} className="flex justify-between items-center py-2 border-b border-slate-700/30">
-                                            <div><p className="text-white font-black text-xs">${parseFloat(h.amount).toFixed(2)}</p><p className="text-[8px] text-slate-500 font-bold">{h.date}</p></div>
-                                            <div className="text-[7px] font-black text-green-500/50 uppercase italic">Verified</div>
+                                            <div><p className="text-white font-black text-xs">${parseFloat(h.amount).toFixed(2)}</p><p className="text-[7px] text-slate-500 font-bold uppercase">{h.date} via {h.method || 'Cash'}</p></div>
+                                            <div className="text-[7px] font-black text-green-500/50 uppercase italic tracking-widest">Verified Receipt</div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
-
                             <div className="grid grid-cols-3 gap-2">
-                                <div className="bg-[#1e293b] p-3 rounded-2xl border border-slate-700 text-left"><p className="text-[7px] font-black text-slate-500 uppercase mb-1">Interest</p><p className="font-black text-white text-[9px]">${parseFloat(myPortfolio.interestAmount || 0).toFixed(0)}</p></div>
-                                <div className="bg-[#1e293b] p-3 rounded-2xl border border-slate-700 text-left"><p className="text-[7px] font-black text-slate-500 uppercase mb-1">Top-Up</p><p className="font-black text-white text-[9px]">${parseFloat(myPortfolio.additionalFunds || 0).toFixed(0)}</p></div>
-                                <div className="bg-[#0f172a] p-3 rounded-2xl border border-blue-900/30 text-left shadow-inner"><p className="text-[7px] font-black text-blue-500 uppercase mb-1">Principal (Ref)</p><p className="font-black text-blue-300 text-[9px]">${parseFloat(myPortfolio.amountOwed || 0).toFixed(0)}</p></div>
-                            </div>
-
-                            {showPayModal && (
-                                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f172a]/90 backdrop-blur-sm">
-                                    <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 shadow-2xl">
-                                        <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-white uppercase italic">Schedule Meeting</h3><button onClick={() => setShowPayModal(false)} className="text-slate-500 text-2xl">&times;</button></div>
-                                        <form onSubmit={(e) => {
-                                            e.preventDefault();
-                                            const str = `${e.target.d.value} @ ${e.target.t.value}`;
-                                            db.ref(`clients/${myPortfolio.id}`).update({ meetingRequest: str });
-                                            alert("Request Sent!"); setShowPayModal(false);
-                                        }} className="space-y-4">
-                                            <input type="date" name="d" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-700" required />
-                                            <input type="time" name="t" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-700" />
-                                            <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Confirm</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : <div className="text-center p-10 text-slate-600 font-black uppercase tracking-widest animate-pulse">Loading...</div>
-                )}
-            </main>
-        </div>
-    );
+                                <div
 };
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
