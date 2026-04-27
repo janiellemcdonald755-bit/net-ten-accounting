@@ -16,7 +16,7 @@
 
     <script type="text/babel">
         // 1. CONFIG (Paste your real keys here!)
-        const firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
     authDomain: "net-ten-accounting.firebaseapp.com",
     databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
@@ -38,16 +38,13 @@ const App = () => {
     const [loginId, setLoginId] = React.useState('');
     const [password, setPassword] = React.useState('');
     
-    // States for Modals
     const [editingClient, setEditingClient] = React.useState(null);
     const [payingClient, setPayingClient] = React.useState(null);
     
-    // States for Filtering
     const [historyFilter, setHistoryFilter] = React.useState('all'); 
     const [customStart, setCustomStart] = React.useState('');
     const [customEnd, setCustomEnd] = React.useState('');
     
-    // States for Calculations
     const [tempPrincipal, setTempPrincipal] = React.useState('');
     const [tempInterest, setTempInterest] = React.useState('');
     const [payAmt, setPayAmt] = React.useState('');
@@ -75,7 +72,6 @@ const App = () => {
 
     const isAdmin = user?.email === ADMIN_EMAIL;
 
-    // --- Filter Logic ---
     const getFilteredHistory = () => {
         const now = new Date();
         const startOfDay = new Date(new Date().setHours(0,0,0,0)).getTime();
@@ -108,8 +104,8 @@ const App = () => {
         return (
             <div className="min-h-screen flex items-center justify-center p-6 bg-[#0f172a]">
                 <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl w-full max-w-md text-center border border-slate-700">
-                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" />
-                    <h1 className="text-3xl font-black text-blue-400 mb-2 uppercase italic italic tracking-tighter">Net Ten Ltd</h1>
+                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-20 h-20 mx-auto mb-4 object-contain" alt="logo" />
+                    <h1 className="text-3xl font-black text-blue-400 mb-2 uppercase italic tracking-tighter">Net Ten Ltd</h1>
                     <form onSubmit={handleLogin} className="space-y-4 mt-6">
                         <input type="text" placeholder="Admin ID / Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setLoginId(e.target.value)} />
                         <input type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setPassword(e.target.value)} />
@@ -124,7 +120,7 @@ const App = () => {
         <div className="min-h-screen pb-24 bg-[#0f172a] text-slate-200 font-sans">
             <header className="sticky top-0 z-50 bg-[#1e293b]/80 backdrop-blur-md p-5 border-b border-slate-700 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-8 h-8 object-contain" />
+                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-8 h-8 object-contain" alt="logo" />
                     <h1 className="text-md font-black text-white uppercase italic text-sm">Net Ten Ltd</h1>
                 </div>
                 <button onClick={() => auth.signOut()} className="text-[9px] font-black text-red-400 border border-red-900/50 px-3 py-1 rounded-full uppercase">Logout</button>
@@ -141,7 +137,7 @@ const App = () => {
 
                         {view === 'home' && (
                             <>
-                                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-[32px] mb-6 border border-blue-400/30">
+                                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-[32px] mb-6 shadow-2xl border border-blue-400/30">
                                     <p className="text-[10px] font-black text-blue-100 uppercase mb-1">Total Outstanding</p>
                                     <p className="text-4xl font-black text-white italic tracking-tighter">${activeTotalOut.toFixed(2)}</p>
                                 </div>
@@ -163,25 +159,25 @@ const App = () => {
                         )}
 
                         {view === 'history' && (
-                            <div>
+                            <div className="animate-in slide-in-from-bottom">
                                 <div className="bg-green-900/20 border border-green-900/30 p-6 rounded-[32px] mb-4 text-center">
                                     <p className="text-green-500 font-black text-[10px] uppercase mb-1">Total Collected</p>
                                     <p className="text-4xl font-black text-white italic tracking-tighter">${periodTotal.toFixed(2)}</p>
                                 </div>
                                 <div className="flex flex-wrap bg-[#1e293b] p-1 rounded-2xl mb-4 border border-slate-700">
                                     {['all', 'day', 'week', 'month', 'custom'].map(f => (
-                                        <button key={f} onClick={() => setHistoryFilter(f)} className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase ${historyFilter === f ? 'bg-green-600 text-white' : 'text-slate-500'}`}>{f}</button>
+                                        <button key={f} onClick={() => setHistoryFilter(f)} className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase ${historyFilter === f ? 'bg-green-600 text-white' : 'text-slate-400'}`}>{f}</button>
                                     ))}
                                 </div>
                                 {historyFilter === 'custom' && (
-                                    <div className="grid grid-cols-2 gap-2 mb-6 animate-in slide-in-from-top">
+                                    <div className="grid grid-cols-2 gap-2 mb-6">
                                         <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
                                         <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
                                     </div>
                                 )}
                                 <div className="space-y-3">
                                     {filteredHistory.map((h, i) => (
-                                        <div key={i} className="flex justify-between items-center p-4 bg-[#1e293b] rounded-2xl border border-slate-800 shadow-md">
+                                        <div key={i} className="flex justify-between items-center p-4 bg-[#1e293b] rounded-2xl border border-slate-800">
                                             <div><p className="text-blue-400 font-black text-[10px] uppercase">{h.clientName}</p><p className="text-[8px] text-slate-500 font-bold uppercase">{h.date}</p></div>
                                             <p className="font-black text-green-400 text-md">${parseFloat(h.amount).toFixed(2)}</p>
                                         </div>
@@ -205,16 +201,21 @@ const App = () => {
                                 alert("Record Created!"); setView('home');
                             }} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 space-y-3">
                                 <h2 className="text-lg font-black text-white uppercase italic">New Portfolio</h2>
-                                <div className="grid grid-cols-2 gap-3"><input name="name" placeholder="Name" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required /><input name="phone" placeholder="Phone" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required /></div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input name="name" placeholder="Name" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required />
+                                    <input name="phone" placeholder="Phone" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required />
+                                </div>
                                 <input name="workAddress" placeholder="Work Address" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" />
-                                <div className="grid grid-cols-2 gap-3"><input name="empPhone" placeholder="Emp Phone" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none" /><input name="location" placeholder="Work Location" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none" /></div>
-                                <div className="grid grid-cols-2 gap-3 pt-2"><input name="loanDate" type="date" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" /><input name="dueDate" type="date" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-red-900/20" required /></div>
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <input name="loanDate" type="date" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" />
+                                    <input name="dueDate" type="date" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-red-900/20" required />
+                                </div>
                                 <div className="grid grid-cols-3 gap-2">
                                     <input name="amountOwed" placeholder="Principal" type="number" step="any" value={tempPrincipal} onChange={(e) => handleCalc(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" />
                                     <input name="additionalFunds" placeholder="Top-Up" type="number" step="any" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" />
                                     <input name="interestAmount" placeholder="Interest" type="number" step="any" value={tempInterest} onChange={(e) => setTempInterest(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" required />
                                 </div>
-                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-2 shadow-lg">Save Profile</button>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-2">Save Profile</button>
                             </form>
                         )}
 
@@ -239,5 +240,74 @@ const App = () => {
                                     </div>
                                     <input name="workAddress" defaultValue={editingClient.workAddress} className="w-full p-4 bg-[#0f172a] rounded-xl text-white" />
                                     <div className="grid grid-cols-3 gap-2 pt-2">
-                                        <div className="space-y-1"><label className="text-[7px] uppercase font-black ml-1">Principal</label><input name="amountOwed" type="number" step="any" defaultValue={editingClient.amountOwed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
-                                        <div className="space-y-1"><label className="text-[7px] uppercase font-black ml-1">
+                                        <div className="space-y-1">
+                                            <label className="text-[7px] uppercase font-black ml-1">Principal</label>
+                                            <input name="amountOwed" type="number" step="any" defaultValue={editingClient.amountOwed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[7px] uppercase font-black ml-1">Top-Up</label>
+                                            <input name="additionalFunds" type="number" step="any" defaultValue={editingClient.additionalFunds} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[7px] uppercase font-black ml-1 text-green-500">Interest</label>
+                                            <input name="interestAmount" type="number" step="any" defaultValue={editingClient.interestAmount} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" />
+                                        </div>
+                                    </div>
+                                    <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Save Changes</button>
+                                    <button type="button" onClick={() => setEditingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center">Cancel</button>
+                                </form>
+                            </div>
+                        )}
+
+                        {payingClient && (
+                            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
+                                <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700 space-y-6">
+                                    <div className="flex justify-between border-b border-slate-800">
+                                        <button onClick={() => setIsNewLoanView(false)} className={`pb-2 text-[10px] font-black uppercase ${!isNewLoanView ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Payment</button>
+                                        <button onClick={() => setIsNewLoanView(true)} className={`pb-2 text-[10px] font-black uppercase ${isNewLoanView ? 'text-green-400 border-b-2 border-green-400' : 'text-slate-500'}`}>New Loan</button>
+                                    </div>
+                                    {!isNewLoanView ? (
+                                        <div className="space-y-6">
+                                            <h3 className="text-2xl font-black text-white italic text-center">{payingClient.name}</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button onClick={() => setPayAmt((parseFloat(payingClient.interestAmount || 0) + parseFloat(payingClient.additionalFunds || 0)).toFixed(2))} className="bg-green-900/20 text-green-400 py-3 rounded-2xl font-black text-[9px] uppercase">Full Pay</button>
+                                                <button onClick={() => setPayAmt(parseFloat(payingClient.interestAmount || 0).toFixed(2))} className="bg-blue-900/20 text-blue-400 py-3 rounded-2xl font-black text-[9px] uppercase">Interest Only</button>
+                                            </div>
+                                            <input type="number" value={payAmt} onChange={(e) => setPayAmt(e.target.value)} placeholder="0.00" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xl font-black outline-none" />
+                                            <button onClick={() => {
+                                                const amt = parseFloat(payAmt); if(!amt) return;
+                                                const isIntOnly = amt === parseFloat(payingClient.interestAmount || 0);
+                                                let ni = payingClient.interestAmount || 0; let nt = payingClient.additionalFunds || 0;
+                                                if(isIntOnly) { ni = (parseFloat(payingClient.amountOwed || 0) * 0.25); } 
+                                                else { let rem = amt; if(rem <= ni){ ni -= rem; rem = 0; } else { rem -= ni; ni = 0; nt = Math.max(0, nt - rem); } }
+                                                const hObj = { amount: amt, date: new Date().toLocaleDateString(), timestamp: Date.now() };
+                                                db.ref(`clients/${payingClient.id}`).update({ interestAmount: ni, additionalFunds: nt, history: [...(payingClient.history || []), hObj] });
+                                                setPayingClient(null); alert("Confirmed!");
+                                            }} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase">Confirm</button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <input type="number" placeholder="New Principal" onChange={(e) => handleCalc(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-2xl text-white outline-none" />
+                                            <input type="number" value={tempInterest} readOnly className="w-full p-4 bg-[#0f172a] rounded-2xl text-green-400 outline-none" />
+                                            <button onClick={() => {
+                                                const p = parseFloat(tempPrincipal || 0); const i = parseFloat(tempInterest || 0); if(!p) return;
+                                                db.ref(`clients/${payingClient.id}`).update({ amountOwed: parseFloat(payingClient.amountOwed || 0) + p, interestAmount: parseFloat(payingClient.interestAmount || 0) + i });
+                                                setPayingClient(null); alert("Loan Added!");
+                                            }} className="w-full bg-green-600 text-white font-black py-5 rounded-2xl uppercase">Issue Loan</button>
+                                        </div>
+                                    )}
+                                    <button onClick={() => setPayingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center">Cancel</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="text-center p-10 text-slate-600 font-black uppercase tracking-widest animate-pulse">Syncing...</div>
+                )}
+            </main>
+        </div>
+    );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
