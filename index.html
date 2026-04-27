@@ -37,13 +37,17 @@ const App = () => {
     const [searchTerm, setSearchTerm] = React.useState('');
     const [loginId, setLoginId] = React.useState('');
     const [password, setPassword] = React.useState('');
+    
+    // Modals
     const [editingClient, setEditingClient] = React.useState(null);
     const [payingClient, setPayingClient] = React.useState(null);
     
+    // Filter States
     const [historyFilter, setHistoryFilter] = React.useState('all'); 
     const [customStart, setCustomStart] = React.useState('');
     const [customEnd, setCustomEnd] = React.useState('');
     
+    // Calculation/Form States
     const [tempPrincipal, setTempPrincipal] = React.useState('');
     const [tempInterest, setTempInterest] = React.useState('');
     const [payAmt, setPayAmt] = React.useState('');
@@ -72,6 +76,7 @@ const App = () => {
 
     const isAdmin = user?.email === ADMIN_EMAIL;
 
+    // Filter Logic
     const getFilteredHistory = () => {
         const now = new Date();
         const startOfDay = new Date(new Date().setHours(0,0,0,0)).getTime();
@@ -94,7 +99,7 @@ const App = () => {
     const periodTotal = filteredHistory.reduce((acc, h) => acc + parseFloat(h.amount || 0), 0);
     const activeTotalOut = clients.reduce((acc, c) => acc + (parseFloat(c.interestAmount || 0) + parseFloat(c.additionalFunds || 0)), 0);
 
-    const handlePrincipalChange = (val) => {
+    const handlePrincipalCalc = (val) => {
         setTempPrincipal(val);
         const num = parseFloat(val);
         if(!isNaN(num)) setTempInterest((num * 0.25).toFixed(2));
@@ -128,7 +133,7 @@ const App = () => {
 
             <main className="p-4 max-w-lg mx-auto">
                 {isAdmin ? (
-                    <div className="animate-in fade-in">
+                    <div>
                         <nav className="flex bg-[#1e293b] p-1 rounded-2xl mb-6 border border-slate-700">
                             <button onClick={() => setView('home')} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase ${view === 'home' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Portfolios</button>
                             <button onClick={() => setView('history')} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase ${view === 'history' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>History</button>
@@ -143,9 +148,9 @@ const App = () => {
                                 </div>
                                 <input type="text" placeholder="Search portfolios..." className="w-full p-4 mb-6 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={(e) => setSearchTerm(e.target.value)} />
                                 {clients.filter(c => c.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
-                                    <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 shadow-xl">
+                                    <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4">
                                         <div className="flex justify-between items-start">
-                                            <div><h3 className="font-black text-white text-lg">{c.name}</h3><p className="text-[8px] text-slate-500 font-black uppercase tracking-tighter">DUE: {c.dueDate || 'N/A'}</p></div>
+                                            <div><h3 className="font-black text-white text-lg">{c.name}</h3><p className="text-[8px] text-slate-500 font-black uppercase">DUE: {c.dueDate || 'N/A'}</p></div>
                                             <div className="text-right"><p className="font-black text-xl text-green-400 tracking-tighter">${(parseFloat(c.interestAmount || 0) + parseFloat(c.additionalFunds || 0)).toFixed(2)}</p></div>
                                         </div>
                                         <div className="grid grid-cols-3 gap-2 mt-4">
@@ -159,8 +164,8 @@ const App = () => {
                         )}
 
                         {view === 'history' && (
-                            <div className="animate-in slide-in-from-bottom">
-                                <div className="bg-green-900/20 border border-green-900/30 p-6 rounded-[32px] mb-4 text-center shadow-2xl">
+                            <div>
+                                <div className="bg-green-900/20 border border-green-900/30 p-6 rounded-[32px] mb-4 text-center">
                                     <p className="text-green-500 font-black text-[10px] uppercase mb-1">Total Collected</p>
                                     <p className="text-4xl font-black text-white italic tracking-tighter">${periodTotal.toFixed(2)}</p>
                                 </div>
@@ -170,14 +175,14 @@ const App = () => {
                                     ))}
                                 </div>
                                 {historyFilter === 'custom' && (
-                                    <div className="grid grid-cols-2 gap-2 mb-6 animate-in slide-in-from-top">
+                                    <div className="grid grid-cols-2 gap-2 mb-6">
                                         <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-2 font-black">From</label><input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
                                         <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase ml-2 font-black">To</label><input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
                                     </div>
                                 )}
                                 <div className="space-y-3">
                                     {filteredHistory.map((h, i) => (
-                                        <div key={i} className="flex justify-between items-center p-4 bg-[#1e293b] rounded-2xl border border-slate-800 shadow-md">
+                                        <div key={i} className="flex justify-between items-center p-4 bg-[#1e293b] rounded-2xl border border-slate-800">
                                             <div><p className="text-blue-400 font-black text-[10px] uppercase">{h.clientName}</p><p className="text-[8px] text-slate-500 font-bold uppercase">{h.date} • {h.method}</p></div>
                                             <p className="font-black text-green-400 text-md">${parseFloat(h.amount).toFixed(2)}</p>
                                         </div>
@@ -186,64 +191,10 @@ const App = () => {
                             </div>
                         )}
 
-                        {/* EDIT/DETAILS MODAL - FIXED */}
-                        {editingClient && (
-                            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const d = Object.fromEntries(new FormData(e.target).entries());
-                                    db.ref(`clients/${editingClient.id}`).update({
-                                        ...d, 
-                                        interestAmount: parseFloat(d.interestAmount || 0), 
-                                        amountOwed: parseFloat(d.amountOwed || 0),
-                                        additionalFunds: parseFloat(d.additionalFunds || 0)
-                                    });
-                                    setEditingClient(null); alert("Updated!");
-                                }} className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-3 overflow-y-auto max-h-[90vh]">
-                                    <h3 className="text-xl font-black text-white uppercase italic">Client Profile</h3>
-                                    <input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-xl text-white outline-none" required />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1"><label className="text-[7px] text-red-400 uppercase font-black ml-2">Due Date</label><input name="dueDate" type="date" defaultValue={editingClient.dueDate} className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
-                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase font-black ml-2">Personal Phone</label><input name="phone" defaultValue={editingClient.phone} className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
-                                    </div>
-                                    <input name="workAddress" defaultValue={editingClient.workAddress} placeholder="Work Address" className="w-full p-4 bg-[#0f172a] rounded-xl text-white outline-none" />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <input name="empPhone" defaultValue={editingClient.empPhone} placeholder="Employer Phone" className="p-4 bg-[#0f172a] rounded-xl text-white outline-none" />
-                                        <input name="location" defaultValue={editingClient.location} placeholder="Work Location" className="p-4 bg-[#0f172a] rounded-xl text-white outline-none" />
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2 border-t border-slate-700 pt-3">
-                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase font-black">Principal</label><input name="amountOwed" type="number" step="any" value={tempPrincipal} onChange={(e) => handlePrincipalChange(e.target.value)} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
-                                        <div className="space-y-1"><label className="text-[7px] text-slate-500 uppercase font-black">Top-Up</label><input name="additionalFunds" defaultValue={editingClient.additionalFunds} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
-                                        <div className="space-y-1"><label className="text-[7px] text-green-500 uppercase font-black">Interest</label><input name="interestAmount" type="number" step="any" value={tempInterest} onChange={(e) => setTempInterest(e.target.value)} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-green-900/50" /></div>
-                                    </div>
-                                    <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg mt-2">Save Changes</button>
-                                    <button type="button" onClick={() => { if(confirm("Delete this client?")) { db.ref(`clients/${editingClient.id}`).remove(); setEditingClient(null); } }} className="w-full bg-red-900/20 text-red-500 font-black py-3 rounded-xl uppercase text-[10px]">Delete Record</button>
-                                    <button type="button" onClick={() => setEditingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center pt-2">Cancel</button>
-                                </form>
-                            </div>
-                        )}
-
-                        {/* PAYMENT / NEW LOAN MODAL */}
-                        {payingClient && (
-                            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
-                                <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700 space-y-6 shadow-2xl">
-                                    <div className="flex justify-between border-b border-slate-800 mb-2">
-                                        <button onClick={() => setIsNewLoanView(false)} className={`pb-2 text-[10px] font-black uppercase ${!isNewLoanView ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Record Pay</button>
-                                        <button onClick={() => { setIsNewLoanView(true); setTempPrincipal(''); setTempInterest(''); }} className={`pb-2 text-[10px] font-black uppercase ${isNewLoanView ? 'text-green-400 border-b-2 border-green-400' : 'text-slate-500'}`}>+ New Loan</button>
-                                    </div>
-                                    {!isNewLoanView ? (
-                                        <div className="space-y-6 animate-in fade-in">
-                                            <div className="text-center"><h3 className="text-2xl font-black text-white italic">{payingClient.name}</h3></div>
-                                            <div className="flex bg-[#0f172a] p-1 rounded-2xl border border-slate-800">
-                                                <button onClick={() => setPayMethod('Cash')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase ${payMethod === 'Cash' ? 'bg-green-600 text-white' : 'text-slate-500'}`}>Cash</button>
-                                                <button onClick={() => setPayMethod('Bank')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase ${payMethod === 'Bank' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Bank</button>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <button onClick={() => setPayAmt((parseFloat(payingClient.interestAmount || 0) + parseFloat(payingClient.
-            </main>
-        </div>
-    );
-};
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+                        {view === 'add' && (
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                const d = Object.fromEntries(new FormData(e.target).entries());
+                                const email = `${d.phone.replace(/[^0-9]/g, '')}@netten.com`;
+                                await db.ref('clients').push({
+                                    ...d,
