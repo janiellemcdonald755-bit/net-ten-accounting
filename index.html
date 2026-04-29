@@ -37,16 +37,12 @@ const App = () => {
     const [searchTerm, setSearchTerm] = React.useState('');
     const [historySearch, setHistorySearch] = React.useState('');
     const [historyFilter, setHistoryFilter] = React.useState('all');
-    
-    // Client-specific view state
     const [clientTab, setClientTab] = React.useState('overview'); 
     
     const [editingClient, setEditingClient] = React.useState(null);
     const [payingClient, setPayingClient] = React.useState(null);
-    
     const [loginId, setLoginId] = React.useState('');
     const [password, setPassword] = React.useState('');
-
     const [tempPrincipal, setTempPrincipal] = React.useState('');
     const [tempInterest, setTempInterest] = React.useState('');
     const [isNewLoanView, setIsNewLoanView] = React.useState(false);
@@ -103,7 +99,7 @@ const App = () => {
                     <form onSubmit={handleLogin} className="space-y-4">
                         <input type="text" placeholder="Admin ID / Phone" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setLoginId(e.target.value)} />
                         <input type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setPassword(e.target.value)} />
-                        <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase">Sign In</button>
+                        <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase shadow-lg shadow-blue-900/20">Sign In</button>
                     </form>
                 </div>
             </div>
@@ -119,13 +115,13 @@ const App = () => {
 
             <main className="p-4 max-w-lg mx-auto">
                 {isAdmin ? (
-                    /* ADMIN INTERFACE (UNCHANGED) */
                     <div>
                         <nav className="flex bg-[#1e293b] p-1 rounded-2xl mb-6 border border-slate-700">
                             <button onClick={() => setView('home')} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase ${view === 'home' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>Portfolios</button>
                             <button onClick={() => setView('history')} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase ${view === 'history' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>History</button>
                             <button onClick={() => setView('add')} className={`flex-1 py-3 rounded-xl text-[8px] font-black uppercase ${view === 'add' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>New Client</button>
                         </nav>
+
                         {view === 'home' && (
                             <>
                                 <input type="text" placeholder="Search portfolios..." className="w-full p-4 mb-4 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={(e) => setSearchTerm(e.target.value)} />
@@ -134,7 +130,8 @@ const App = () => {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h3 className="font-black text-white">{c.name}</h3>
-                                                <p className="text-[8px] text-slate-500 font-black uppercase">DUE: {c.dueDate || 'PENDING'}</p>
+                                                <p className="text-[8px] text-slate-500 font-black uppercase tracking-widest">DUE: {c.dueDate || 'PENDING'}</p>
+                                                {c.scheduleDate && <p className="text-[8px] text-yellow-500 font-black uppercase mt-1">📌 MEETING: {c.scheduleDate}</p>}
                                             </div>
                                             <p className="font-black text-xl text-green-400 tracking-tighter">${(parseFloat(c.interestAmount || 0)).toFixed(2)}</p>
                                         </div>
@@ -147,7 +144,7 @@ const App = () => {
                                 ))}
                             </>
                         )}
-                        {/* Admin Views: History, Add remain exactly the same as previous build */}
+
                         {view === 'history' && (
                              <div className="space-y-4">
                                 <input type="text" placeholder="Filter history..." className="w-full p-4 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={(e) => setHistorySearch(e.target.value)} />
@@ -176,6 +173,7 @@ const App = () => {
                                 ))}
                             </div>
                         )}
+
                         {view === 'add' && (
                             <form onSubmit={async (e) => {
                                 e.preventDefault();
@@ -191,6 +189,12 @@ const App = () => {
                                     <input name="phone" placeholder="Phone #" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none" required />
                                     <input name="email" placeholder="Email" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none" />
                                 </div>
+                                {/* RESTORED FIELDS */}
+                                <input name="address" placeholder="Physical Address" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs outline-none" />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input name="workLocation" placeholder="Employer / Work Location" className="p-4 bg-[#0f172a] rounded-2xl text-white text-xs outline-none" />
+                                    <input name="employerPhone" placeholder="Employer Phone #" className="p-4 bg-[#0f172a] rounded-2xl text-white text-xs outline-none" />
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1"><label className="text-[7px] font-black uppercase text-slate-500 ml-1">Principal</label><input name="amountOwed" type="number" onChange={(e) => handlePrincipalCalc(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" /></div>
                                     <div className="space-y-1"><label className="text-[7px] font-black uppercase text-green-500 ml-1">Total (+25%)</label><input name="interestAmount" value={tempInterest} type="number" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" required /></div>
@@ -200,12 +204,12 @@ const App = () => {
                                     <div className="space-y-1"><label className="text-[7px] font-black uppercase text-red-500 ml-1">Due Date</label><input name="dueDate" type="date" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" required /></div>
                                 </div>
                                 <select name="disbursement" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs"><option>Face to Face</option><option>Online Transfer</option></select>
-                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-2">Activate Portfolio</button>
+                                <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-2 shadow-lg">Activate Portfolio</button>
                             </form>
                         )}
                     </div>
                 ) : (
-                    /* CLIENT INTERFACE - UPDATED WITH TABS */
+                    /* CLIENT INTERFACE (SPLIT BLUE + HISTORY TAB) */
                     <div className="animate-in slide-in-from-bottom-4 duration-500">
                         <nav className="flex bg-[#1e293b] p-1 rounded-2xl mb-6 border border-slate-700 shadow-lg">
                             <button onClick={() => setClientTab('overview')} className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase ${clientTab === 'overview' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>My Balance</button>
@@ -255,42 +259,47 @@ const App = () => {
                                 </div>
                             </>
                         ) : (
-                            /* NEW: CLIENT DEDICATED HISTORY PAGE */
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-slate-500 uppercase text-center tracking-widest mb-4">Transaction Records</h3>
                                 {(currentClient?.history || []).slice().reverse().map((h, i) => (
                                     <div key={i} className="bg-[#1e293b] border border-slate-800 p-5 rounded-[28px] flex justify-between items-center shadow-md">
-                                        <div>
-                                            <p className="text-[10px] font-black text-white uppercase">{h.type}</p>
-                                            <p className="text-[8px] text-slate-500 uppercase">{h.date} • {h.method}</p>
-                                        </div>
-                                        <p className={`font-black text-sm ${h.type === "Payment" ? 'text-green-400' : 'text-red-400'}`}>
-                                            {h.type === "Payment" ? '-' : '+'}${h.amount.toFixed(2)}
-                                        </p>
+                                        <div><p className="text-[10px] font-black text-white uppercase">{h.type}</p><p className="text-[8px] text-slate-500 uppercase">{h.date} • {h.method}</p></div>
+                                        <p className={`font-black text-sm ${h.type === "Payment" ? 'text-green-400' : 'text-red-400'}`}>{h.type === "Payment" ? '-' : '+'}${h.amount.toFixed(2)}</p>
                                     </div>
                                 ))}
-                                {(!currentClient?.history || currentClient.history.length === 0) && (
-                                    <p className="text-center text-slate-500 text-[10px] py-10 uppercase font-black">No transaction history found.</p>
-                                )}
                             </div>
                         )}
                     </div>
                 )}
-                {/* Admin Modals for Edit and Adjustment remain exactly the same as previous build */}
+
+                {/* MODAL: ADMIN EDIT (RESTORED ALL FIELDS) */}
                 {editingClient && (
                     <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md overflow-y-auto">
-                        <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-4 my-8">
-                            <h3 className="text-xl font-black text-white uppercase italic">Edit Record</h3>
+                        <div className="bg-[#1e293b] w-full max-w-md rounded-[32px] p-8 border border-slate-700 space-y-4 my-8 shadow-2xl">
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Edit Record</h3>
                             <form onSubmit={(e) => {
                                 e.preventDefault();
                                 const d = Object.fromEntries(new FormData(e.target).entries());
-                                db.ref(`clients/${editingClient.id}`).update({ ...d, interestAmount: parseFloat(d.interestAmount || 0), amountOwed: parseFloat(d.amountOwed || 0) });
+                                db.ref(`clients/${editingClient.id}`).update({ 
+                                    ...d, 
+                                    interestAmount: parseFloat(d.interestAmount || 0), 
+                                    amountOwed: parseFloat(d.amountOwed || 0) 
+                                });
                                 setEditingClient(null);
                             }} className="space-y-3">
                                 <input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
+                                <input name="address" defaultValue={editingClient.address} placeholder="Address" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className="space-y-1"><label className="text-[7px] font-black uppercase text-slate-500">Loan Date</label><input name="loanDate" type="date" defaultValue={editingClient.loanDate} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
-                                    <div className="space-y-1"><label className="text-[7px] font-black uppercase text-red-500">Due Date</label><input name="dueDate" type="date" defaultValue={editingClient.dueDate} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs" /></div>
+                                    <input name="workLocation" defaultValue={editingClient.workLocation} placeholder="Employer" className="p-4 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
+                                    <input name="employerPhone" defaultValue={editingClient.employerPhone} placeholder="Employer #" className="p-4 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1"><label className="text-[7px] font-black uppercase text-slate-500">Loan Date</label><input name="loanDate" type="date" defaultValue={editingClient.loanDate} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" /></div>
+                                    <div className="space-y-1"><label className="text-[7px] font-black uppercase text-red-500">Due Date</label><input name="dueDate" type="date" defaultValue={editingClient.dueDate} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" /></div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1"><label className="text-[7px] font-black uppercase text-slate-500">Principal</label><input name="amountOwed" type="number" defaultValue={editingClient.amountOwed} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" /></div>
+                                    <div className="space-y-1"><label className="text-[7px] font-black uppercase text-green-500">Total Bal</label><input name="interestAmount" type="number" defaultValue={editingClient.interestAmount} className="w-full p-3 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" /></div>
                                 </div>
                                 <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-lg">Save Update</button>
                                 <button type="button" onClick={() => setEditingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] text-center mt-2">Close</button>
@@ -298,6 +307,8 @@ const App = () => {
                         </div>
                     </div>
                 )}
+
+                {/* MODAL: ADMIN ADJUSTMENT (UNCHANGED) */}
                 {payingClient && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
                         <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700 space-y-6 shadow-2xl">
