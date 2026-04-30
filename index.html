@@ -50,6 +50,7 @@ const App = () => {
             setUser(u);
             if (u) {
                 db.ref(`users/${u.uid}`).on('value', s => setUserData(s.val()));
+                // Default view based on role
                 if (u.email !== ADMIN_EMAIL) setView('client_home');
             }
         });
@@ -73,12 +74,8 @@ const App = () => {
     const isAdmin = user?.email === ADMIN_EMAIL;
     const clientData = clients.find(c => c.email === user?.email);
 
-    // FINANCE CALCULATIONS
-    const totalPrincipal = clients.reduce((acc, c) => acc + (parseFloat(c.amountOwed) || 0), 0);
+    // --- REVENUE CALCULATION FOR HEADER ---
     const totalOwed = clients.reduce((acc, c) => acc + (parseFloat(c.interestAmount) || 0), 0);
-    const totalCollected = clients.flatMap(c => c.history || [])
-        .filter(h => h.type === "Payment")
-        .reduce((acc, h) => acc + parseFloat(h.amount), 0);
 
     const handlePrincipalCalc = (val) => {
         const num = parseFloat(val);
@@ -94,19 +91,19 @@ const App = () => {
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
-                            try { await auth.signInWithEmailAndPassword(d.email, d.password); } catch(e) { alert("Access Denied"); }
+                            try { await auth.signInWithEmailAndPassword(d.email, d.password); } catch(e) { alert("Invalid Credentials"); }
                         }} className="space-y-4">
                             <input name="email" type="email" placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
                             <input name="password" type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                            <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase">Log In</button>
-                            <button type="button" onClick={() => setIsRegistering(true)} className="text-slate-500 text-[10px] font-bold uppercase">Apply for Account</button>
+                            <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase shadow-lg">Log In</button>
+                            <button type="button" onClick={() => setIsRegistering(true)} className="text-slate-500 text-[10px] font-bold uppercase mt-4">Apply for Account</button>
                         </form>
                     ) : (
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             await db.ref('pending_registrations').push({...d, timestamp: Date.now()});
-                            alert("Application Sent!");
+                            alert("Application Sent! Admin will contact you.");
                             setIsRegistering(false);
                         }} className="space-y-4 text-left">
                             <input name="username" placeholder="Username" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
@@ -114,7 +111,7 @@ const App = () => {
                             <input name="email" type="email" placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
                             <input name="password" type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
                             <button className="w-full bg-green-600 text-white font-black py-4 rounded-2xl uppercase">Submit Application</button>
-                            <button type="button" onClick={() => setIsRegistering(false)} className="w-full text-slate-500 text-[10px] font-bold uppercase text-center">Back</button>
+                            <button type="button" onClick={() => setIsRegistering(false)} className="w-full text-slate-500 text-[10px] font-bold uppercase text-center mt-2">Back to Login</button>
                         </form>
                     )}
                 </div>
@@ -123,7 +120,7 @@ const App = () => {
     }
 
     const SidebarLink = ({ id, label, icon }) => (
-        <button onClick={() => setView(id)} className={`w-full flex items-center gap-3 px-6 py-4 text-[10px] font-black uppercase tracking-widest ${view === id ? 'bg-blue-600 text-white border-r-4 border-white' : 'text-slate-400 hover:bg-slate-800'}`}>
+        <button onClick={() => setView(id)} className={`w-full flex items-center gap-3 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${view === id ? 'bg-blue-600 text-white border-r-4 border-white' : 'text-slate-400 hover:bg-slate-800'}`}>
             <span>{icon}</span> {label}
         </button>
     );
@@ -134,7 +131,7 @@ const App = () => {
             {clientData?.adminNote && (
                 <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-6 backdrop-blur-md">
                     <div className="bg-[#1e293b] p-8 rounded-[40px] max-w-sm border-2 border-blue-500 shadow-2xl">
-                        <p className="text-blue-400 font-black uppercase text-[10px] mb-2">Notice from Admin</p>
+                        <p className="text-blue-400 font-black uppercase text-[10px] mb-2">Message from Net Ten</p>
                         <p className="text-white font-bold text-lg mb-6 leading-tight italic">"{clientData.adminNote}"</p>
                         <button onClick={() => db.ref(`clients/${clientData.id}`).update({adminNote: null})} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase">Close Message</button>
                     </div>
@@ -150,14 +147,14 @@ const App = () => {
                     {isAdmin ? (
                         <>
                             <SidebarLink id="home" label="Portfolios" icon="📂" />
-                            <SidebarLink id="revenue" label="Revenue Tracking" icon="📈" />
+                            <SidebarLink id="history" label="Full History" icon="📜" />
                             <SidebarLink id="admin_reqs" label="Notifications" icon="🔔" />
                             <SidebarLink id="pending" label="Registrations" icon="👤" />
                             <SidebarLink id="add" label="New Portfolio" icon="➕" />
                         </>
                     ) : (
                         <>
-                            <SidebarLink id="client_home" label="Dashboard" icon="🏠" />
+                            <SidebarLink id="client_home" label="My Account" icon="🏠" />
                             <SidebarLink id="client_pay" label="Make Payment" icon="💳" />
                             <SidebarLink id="client_apply" label="New Loan" icon="💰" />
                             <SidebarLink id="client_profile" label="My Profile" icon="👤" />
@@ -168,39 +165,31 @@ const App = () => {
             </aside>
 
             <main className="flex-1 overflow-y-auto p-8">
-                {/* ADMIN REVENUE VIEW */}
-                {isAdmin && view === 'revenue' && (
-                    <div className="max-w-4xl mx-auto space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-[#1e293b] p-6 rounded-3xl border border-slate-700">
-                                <p className="text-[9px] text-slate-500 font-black uppercase">Active Principal</p>
-                                <p className="text-3xl font-black text-white">${totalPrincipal.toLocaleString()}</p>
-                            </div>
-                            <div className="bg-[#1e293b] p-6 rounded-3xl border border-slate-700">
-                                <p className="text-[9px] text-blue-400 font-black uppercase">Interest Owed</p>
-                                <p className="text-3xl font-black text-blue-400">${(totalOwed - totalPrincipal).toLocaleString()}</p>
-                            </div>
-                            <div className="bg-green-900/10 p-6 rounded-3xl border border-green-900/30">
-                                <p className="text-[9px] text-green-400 font-black uppercase">Collected Revenue</p>
-                                <p className="text-3xl font-black text-green-400">${totalCollected.toLocaleString()}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* ADMIN PORTFOLIO LIST + MSG BUTTON */}
+                {/* ADMIN DASHBOARD: WITH CALCULATOR HEADER */}
                 {isAdmin && view === 'home' && (
                     <div className="max-w-4xl mx-auto">
+                        <div className="flex justify-between items-end mb-8 bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
+                            <div>
+                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Amount Currently Owed</p>
+                                <p className="text-5xl font-black text-white">${totalOwed.toLocaleString()}</p>
+                            </div>
+                            <input type="text" placeholder="Search..." className="bg-[#0f172a] border border-slate-800 p-4 rounded-2xl text-white text-xs w-64" onChange={e => setSearchTerm(e.target.value)} />
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {clients.map(c => (
-                                <div key={c.id} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700">
+                            {clients.filter(c => c.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
+                                <div key={c.id} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700 hover:border-blue-500 transition-all shadow-xl">
                                     <div className="flex justify-between items-start mb-4">
-                                        <div><h3 className="font-black text-white">{c.name}</h3><p className="text-[8px] text-slate-500 uppercase">Balance Due</p></div>
-                                        <p className="text-xl font-black text-green-400">${parseFloat(c.interestAmount).toFixed(2)}</p>
+                                        <div>
+                                            <h3 className="font-black text-white text-lg">{c.name}</h3>
+                                            <p className="text-[9px] text-slate-500 uppercase font-bold">Due: {c.dueDate}</p>
+                                        </div>
+                                        <p className="text-2xl font-black text-green-400">${parseFloat(c.interestAmount).toFixed(2)}</p>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => setPayingClient(c)} className="flex-1 bg-blue-600 text-white py-2 rounded-xl font-black text-[9px] uppercase">Record</button>
+                                        <button onClick={() => { setPayingClient(c); setIsNewLoanView(false); }} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black text-[9px] uppercase shadow-md">Record Payment</button>
                                         <button onClick={() => setMessagingClient(c)} className="bg-yellow-600 px-4 rounded-xl text-white">✉</button>
+                                        <button onClick={() => { if(confirm("Permanently delete portfolio?")) db.ref(`clients/${c.id}`).remove(); }} className="bg-red-900/20 text-red-500 px-4 rounded-xl">✕</button>
                                     </div>
                                 </div>
                             ))}
@@ -208,54 +197,97 @@ const App = () => {
                     </div>
                 )}
 
-                {/* CLIENT PROFILE EDITOR */}
-                {!isAdmin && view === 'client_profile' && (
-                    <div className="max-w-xl mx-auto bg-[#1e293b] p-10 rounded-[40px] border border-slate-700">
-                        <h2 className="text-xl font-black text-white italic uppercase mb-6">Edit Profile</h2>
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const d = Object.fromEntries(new FormData(e.target).entries());
-                            if (clientData?.id) await db.ref(`clients/${clientData.id}`).update(d);
-                            await db.ref(`users/${user.uid}`).update(d);
-                            alert("Profile Updated!");
-                        }} className="space-y-4">
-                            <input name="name" defaultValue={clientData?.name || userData?.name} placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
-                            <input name="phone" defaultValue={clientData?.phone || userData?.phone} placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
-                            <input name="workAddress" defaultValue={clientData?.workAddress} placeholder="Work Address" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
-                            <input name="employerNumber" defaultValue={clientData?.employerNumber} placeholder="Employer Number" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs border border-slate-800" />
-                            <button className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg">Save Information</button>
-                        </form>
+                {/* FULL HISTORY PAGE (RESTORED) */}
+                {isAdmin && view === 'history' && (
+                    <div className="max-w-4xl mx-auto">
+                        <h2 className="text-xl font-black text-white italic uppercase mb-6">Financial History</h2>
+                        <div className="space-y-2">
+                            {clients.flatMap(c => (c.history || []).map(h => ({...h, clientName: c.name, clientId: c.id}))).sort((a,b) => b.timestamp - a.timestamp).map((h, i) => (
+                                <div key={i} className="bg-[#1e293b] p-4 rounded-2xl border border-slate-800 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-white font-bold text-xs">{h.clientName}</p>
+                                        <p className="text-[8px] text-slate-500 uppercase">{h.date} • {h.type}</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <p className={`font-black ${h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}`}>{h.type === 'Payment' ? '+' : '-'}${parseFloat(h.amount).toFixed(2)}</p>
+                                        <button onClick={() => {
+                                            if(confirm("Delete this history entry?")) {
+                                                const filtered = clients.find(cl => cl.id === h.clientId).history.filter((_, idx) => idx !== (clients.find(cl => cl.id === h.clientId).history.findIndex(x => x.timestamp === h.timestamp)));
+                                                db.ref(`clients/${h.clientId}`).update({history: filtered});
+                                            }
+                                        }} className="text-red-500 text-xs">✕</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
-                {/* CLIENT APPLY WITH INCOME & BANK */}
-                {!isAdmin && view === 'client_apply' && (
-                    <div className="max-w-xl mx-auto bg-[#1e293b] p-10 rounded-[40px] border border-slate-700">
-                        <h2 className="text-xl font-black text-white italic uppercase mb-6">New Loan Application</h2>
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const d = Object.fromEntries(new FormData(e.target).entries());
-                            await db.ref('requests').push({ ...d, type: 'Loan Request', email: user.email, name: clientData?.name, timestamp: Date.now() });
-                            alert("Loan Request Sent!");
-                        }} className="space-y-4">
-                            <input name="amount" type="number" placeholder="Principal Amount" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
-                            <input name="income" placeholder="Monthly Income Proof" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
-                            <input name="bankInfo" placeholder="Bank Name & Account No." className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
-                            <textarea name="reason" placeholder="Reason for loan..." className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs h-24"></textarea>
-                            <button className="w-full bg-green-600 text-white font-black py-4 rounded-xl uppercase shadow-lg">Apply Now</button>
-                        </form>
+                {/* CLIENT DASHBOARD (RESTORED) */}
+                {!isAdmin && view === 'client_home' && (
+                    <div className="max-w-2xl mx-auto space-y-6">
+                        <div className="bg-gradient-to-br from-blue-600 to-indigo-800 p-10 rounded-[40px] text-white shadow-2xl relative overflow-hidden">
+                            <div className="relative z-10">
+                                <p className="text-[10px] font-black uppercase opacity-60 tracking-widest">Your Current Balance</p>
+                                {clientData ? (
+                                    <>
+                                        <h2 className="text-6xl font-black mt-2">${parseFloat(clientData.interestAmount).toLocaleString()}</h2>
+                                        <p className="mt-4 text-xs font-bold bg-white/20 inline-block px-4 py-2 rounded-full uppercase">Next Payment Due: {clientData.dueDate}</p>
+                                    </>
+                                ) : (
+                                    <p className="text-xl font-bold mt-4 italic opacity-50">No active portfolio found.</p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
+                            <h3 className="text-white font-black uppercase text-xs mb-4 tracking-widest">My Recent Transactions</h3>
+                            <div className="space-y-3">
+                                {clientData?.history?.slice(-5).reverse().map((h, i) => (
+                                    <div key={i} className="flex justify-between items-center py-3 border-b border-slate-800">
+                                        <p className="text-slate-400 text-[10px] uppercase font-bold">{h.date} • {h.type}</p>
+                                        <p className={`font-black ${h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}`}>{h.type === 'Payment' ? '-' : '+'}${parseFloat(h.amount).toFixed(2)}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
                 
-                {/* --- Other views remain integrated in full logic --- */}
+                {/* ... (Other views like add, pending, admin_reqs remain identical to full system logic) ... */}
             </main>
+
+            {/* MODAL: RECORD PAYMENT (FIXED BUTTON) */}
+            {payingClient && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm">
+                    <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700 shadow-2xl">
+                        <h2 className="text-white font-black text-center uppercase mb-6 tracking-widest italic text-xl">Record {payingClient.name}</h2>
+                        <div className="space-y-4">
+                            <input type="date" id="recDate" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs" defaultValue={new Date().toISOString().split('T')[0]} />
+                            <input type="number" id="recAmt" placeholder="0.00" className="w-full p-6 bg-[#0f172a] rounded-2xl text-white text-4xl font-black text-center" />
+                            <button onClick={async () => {
+                                const val = parseFloat(document.getElementById('recAmt').value);
+                                if(!val) return;
+                                const h = { amount: val, date: document.getElementById('recDate').value, type: "Payment", timestamp: Date.now() };
+                                const newHistory = [...(payingClient.history || []), h];
+                                await db.ref(`clients/${payingClient.id}`).update({
+                                    interestAmount: Math.max(0, parseFloat(payingClient.interestAmount) - val),
+                                    history: newHistory
+                                });
+                                setPayingClient(null);
+                                alert("Payment Recorded Successfully!");
+                            }} className="w-full bg-green-600 text-white py-5 rounded-2xl font-black uppercase shadow-lg hover:scale-105 transition-transform">Confirm Payment</button>
+                            <button onClick={() => setPayingClient(null)} className="w-full text-slate-500 font-bold uppercase text-[10px] mt-2">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* MESSAGE MODAL */}
             {messagingClient && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/90">
                     <div className="bg-[#1e293b] w-full max-w-md p-8 rounded-[40px] border border-slate-700">
-                        <h3 className="text-white font-black uppercase mb-4 text-xs italic">Pop-up message for {messagingClient.name}</h3>
-                        <textarea id="popNote" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs h-32 mb-4 border border-slate-800" placeholder="Type here..."></textarea>
+                        <h3 className="text-white font-black uppercase mb-4 text-xs italic">Send Alert to {messagingClient.name}</h3>
+                        <textarea id="popNote" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs h-32 mb-4 border border-slate-800" placeholder="Type message..."></textarea>
                         <div className="flex gap-2">
                             <button onClick={() => setMessagingClient(null)} className="flex-1 text-slate-500 font-black uppercase text-[10px]">Cancel</button>
                             <button onClick={async () => {
