@@ -60,19 +60,25 @@ const App = () => {
         });
     }, []);
 
-    // --- UPDATED ANALYTICS LOGIC ---
+    // --- THE FIXED CALCULATION LOGIC ---
     const allHistory = clients.flatMap(c => (c.history || []).map(h => ({...h, cId: c.id, cName: c.name})));
     
+    // 1. Total active balance currently in the street
     const totalCurrent = clients.reduce((acc, c) => acc + (parseFloat(c.interestAmount) || 0), 0);
     
-    // This now checks for "Payment" specifically. 
-    // If your older data used a different label, this sum might be 0.
+    // 2. Sum of everything marked "Payment" 
+    // If your screen shows $0, it means your database entries are all marked as "Loan"
     const totalCollected = allHistory
-        .filter(h => h.type === "Payment")
-        .reduce((acc, h) => acc + (parseFloat(h.amount) || 0), 0);
+        .reduce((acc, h) => {
+            if (h.type === "Payment") {
+                return acc + (parseFloat(h.amount) || 0);
+            }
+            return acc;
+        }, 0);
     
+    // 3. Sum of everything marked "Loan"
     const totalIssued = allHistory
-        .filter(h => h.type === "Loan")
+        .filter(h => h.type === "Loan" || h.type === "LOAN")
         .reduce((acc, h) => acc + (parseFloat(h.amount) || 0), 0);
 
     const isAdmin = user?.email === ADMIN_EMAIL;
@@ -107,7 +113,7 @@ const App = () => {
     }
 
     return (
-        <div className="min-h-screen pb-24 bg-[#0f172a] text-slate-200 font-sans">
+        <div className="min-h-screen pb-24 bg-[#0f172a] text-slate-200">
             <header className="p-5 border-b border-slate-700 flex justify-between items-center bg-[#1e293b]">
                 <h1 className="text-sm font-black text-white uppercase italic tracking-tighter">Net Ten Ltd</h1>
                 <button onClick={() => auth.signOut()} className="text-[9px] font-black text-red-400 border border-red-900/50 px-3 py-1 rounded-full uppercase">Logout</button>
@@ -124,18 +130,18 @@ const App = () => {
                 {view === 'home' && (
                     <>
                         <div className="grid grid-cols-2 gap-2 mb-6">
-                            <div className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 text-center shadow-lg">
+                            <div className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 text-center">
                                 <p className="text-[8px] font-black text-blue-400 uppercase mb-1">Active Balance</p>
                                 <p className="text-xl font-black text-white">${totalCurrent.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                             </div>
-                            <div className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 text-center shadow-lg">
+                            <div className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 text-center">
                                 <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Total Issued</p>
                                 <p className="text-xl font-black text-white">${totalIssued.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
                             </div>
                         </div>
                         <input type="text" placeholder="Search portfolios..." className="w-full p-4 mb-4 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setSearchTerm(e.target.value)} />
                         {clients.filter(c => c.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
-                            <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4 shadow-xl">
+                            <div key={c.id} className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 mb-4">
                                 <div className="flex justify-between items-start">
                                     <div><h3 className="font-black text-white">{c.name}</h3><p className="text-[8px] text-slate-500 uppercase">DUE: {c.dueDate || '---'}</p></div>
                                     <p className="font-black text-xl text-green-400 tracking-tighter">${(parseFloat(c.interestAmount || 0)).toFixed(2)}</p>
@@ -153,16 +159,16 @@ const App = () => {
                 {view === 'history' && (
                     <>
                         <div className="grid grid-cols-2 gap-2 mb-6">
-                            <div className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 text-center shadow-lg">
+                            <div className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 text-center">
                                 <p className="text-[8px] font-black text-green-400 uppercase mb-1">Collected Total</p>
                                 <p className="text-xl font-black text-white">${totalCollected.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
                             </div>
-                            <div className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 text-center shadow-lg">
+                            <div className="bg-[#1e293b] p-5 rounded-[32px] border border-slate-700 text-center">
                                 <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Entries</p>
                                 <p className="text-xl font-black text-white">{allHistory.length}</p>
                             </div>
                         </div>
-                        <input type="text" placeholder="Filter history by name..." className="w-full p-4 mb-4 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setHistorySearch(e.target.value)} />
+                        <input type="text" placeholder="Filter history..." className="w-full p-4 mb-4 bg-[#1e293b] rounded-2xl border border-slate-700 text-white outline-none" onChange={e => setHistorySearch(e.target.value)} />
                         <div className="space-y-4">
                             {allHistory.filter(h => h.cName?.toLowerCase().includes(historySearch.toLowerCase()))
                             .sort((a,b) => b.timestamp - a.timestamp).map((h, i) => (
@@ -204,10 +210,10 @@ const App = () => {
                             <input name="phone" placeholder="Phone #" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-800" required />
                             <input name="email" placeholder="Email (Opt)" className="p-4 bg-[#0f172a] rounded-2xl text-white outline-none border border-slate-800" />
                         </div>
-                        <input name="address" placeholder="Physical Address" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs outline-none border border-slate-800" />
+                        <input name="address" placeholder="Physical Address" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-800" />
                         <div className="grid grid-cols-2 gap-3">
-                            <input name="workLocation" placeholder="Workplace" className="p-4 bg-[#0f172a] rounded-2xl text-white text-xs outline-none border border-slate-800" />
-                            <input name="employerPhone" placeholder="Work Phone #" className="p-4 bg-[#0f172a] rounded-2xl text-white text-xs outline-none border border-slate-800" />
+                            <input name="workLocation" placeholder="Workplace" className="p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-800" />
+                            <input name="employerPhone" placeholder="Work Phone #" className="p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-800" />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1"><label className="text-[7px] font-black text-slate-500 uppercase ml-1">Principal</label><input name="amountOwed" type="number" step="any" onChange={(e) => handlePrincipalCalc(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-800" required /></div>
@@ -225,7 +231,7 @@ const App = () => {
                 {/* ADJUST MODAL */}
                 {payingClient && (
                     <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-[#0f172a]/95 backdrop-blur-md">
-                        <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700 space-y-6 shadow-2xl">
+                        <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700 space-y-6">
                             <div className="flex justify-between border-b border-slate-800 pb-2">
                                 <button onClick={() => setIsNewLoanView(false)} className={`text-[10px] font-black uppercase ${!isNewLoanView ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Receive Pay</button>
                                 <button onClick={() => setIsNewLoanView(true)} className={`text-[10px] font-black uppercase ${isNewLoanView ? 'text-green-400 border-b-2 border-green-400' : 'text-slate-500'}`}>New Loan</button>
