@@ -38,9 +38,6 @@ const App = () => {
     const [searchTerm, setSearchTerm] = React.useState('');
     const [historySearch, setHistorySearch] = React.useState('');
     
-    const [authMode, setAuthMode] = React.useState('login');
-    const [clientTab, setClientTab] = React.useState('overview');
-    
     const [editingClient, setEditingClient] = React.useState(null);
     const [payingClient, setPayingClient] = React.useState(null);
     const [tempPrincipal, setTempPrincipal] = React.useState('');
@@ -63,39 +60,28 @@ const App = () => {
         });
     }, []);
 
-    // --- CRITICAL CALCULATION FIX ---
-    // Flatten all history items from all clients into one array
+    // --- UPDATED ANALYTICS LOGIC ---
     const allHistory = clients.flatMap(c => (c.history || []).map(h => ({...h, cId: c.id, cName: c.name})));
     
-    // Sum of all current active balances
     const totalCurrent = clients.reduce((acc, c) => acc + (parseFloat(c.interestAmount) || 0), 0);
     
-    // Sum of everything labeled "Payment" (The money you actually collected)
+    // This now checks for "Payment" specifically. 
+    // If your older data used a different label, this sum might be 0.
     const totalCollected = allHistory
         .filter(h => h.type === "Payment")
         .reduce((acc, h) => acc + (parseFloat(h.amount) || 0), 0);
     
-    // Sum of everything labeled "Loan" (The money you gave out)
     const totalIssued = allHistory
         .filter(h => h.type === "Loan")
         .reduce((acc, h) => acc + (parseFloat(h.amount) || 0), 0);
 
     const isAdmin = user?.email === ADMIN_EMAIL;
 
-    // ... handleAuth and handlePrincipalCalc remain the same ...
     const handleAuth = async (e) => {
         e.preventDefault();
         const d = Object.fromEntries(new FormData(e.target).entries());
         let email = d.id.includes('@') ? d.id : `${d.id.replace(/[^0-9]/g, '')}@netten.com`.toLowerCase();
-        if (authMode === 'login') {
-            auth.signInWithEmailAndPassword(email, d.password).catch(() => alert("Login failed."));
-        } else {
-            await db.ref('requests').push({
-                type: 'REGISTRATION', name: d.name, phone: d.phone, email: email, bankInfo: d.bankInfo || "Not provided", password: d.password, timestamp: Date.now()
-            });
-            alert("Application sent!");
-            setAuthMode('login');
-        }
+        auth.signInWithEmailAndPassword(email, d.password).catch(() => alert("Login failed."));
     };
 
     const handlePrincipalCalc = (val) => {
@@ -121,7 +107,7 @@ const App = () => {
     }
 
     return (
-        <div className="min-h-screen pb-24 bg-[#0f172a] text-slate-200">
+        <div className="min-h-screen pb-24 bg-[#0f172a] text-slate-200 font-sans">
             <header className="p-5 border-b border-slate-700 flex justify-between items-center bg-[#1e293b]">
                 <h1 className="text-sm font-black text-white uppercase italic tracking-tighter">Net Ten Ltd</h1>
                 <button onClick={() => auth.signOut()} className="text-[9px] font-black text-red-400 border border-red-900/50 px-3 py-1 rounded-full uppercase">Logout</button>
@@ -252,7 +238,7 @@ const App = () => {
                                     </div>
                                     <div className="relative">
                                         <input type="number" placeholder="0.00" id="adminPayAmt" className="w-full p-6 bg-[#0f172a] rounded-2xl text-white text-3xl font-black text-center border border-slate-700" />
-                                        <button onClick={() => document.getElementById('adminPayAmt').value = payingClient.interestAmount.toFixed(2)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-blue-600/20 text-blue-400 text-[8px] font-black px-2 py-1 rounded uppercase">Full Payoff</button>
+                                        <button onClick={() => document.getElementById('adminPayAmt').value = parseFloat(payingClient.interestAmount || 0).toFixed(2)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-blue-600/20 text-blue-400 text-[8px] font-black px-2 py-1 rounded uppercase">Full Payoff</button>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <button onClick={() => setPayingClient(null)} className="bg-slate-800 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase">Cancel</button>
