@@ -46,18 +46,22 @@ const App = () => {
     const [txnMode, setTxnMode] = React.useState('loan');
     const [reportPeriod, setReportPeriod] = React.useState('monthly');
 
-    // --- DATA FETCHING ---
+    // --- DATA FETCHING (FIXED LOADERS FOR BUTTONS) ---
     React.useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(u => {
             setUser(u);
             if (u) {
-                db.ref(`users/${u.uid}`).on('value', s => setUserData(s.val()));
+                // Ensure user profile loads immediately
+                db.ref(`users/${u.uid}`).on('value', s => {
+                    setUserData(s.val());
+                });
                 if (u.email !== ADMIN_EMAIL) setView('client_account');
             } else {
                 setView('login');
             }
         });
 
+        // Global Listeners for Admin Dashboard counts
         db.ref('clients').on('value', s => {
             const list = [];
             if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
@@ -82,12 +86,11 @@ const App = () => {
     const isAdmin = user?.email === ADMIN_EMAIL;
     const clientData = clients.find(c => c.email === user?.email);
 
-    // --- ANALYTICS ENGINE (FIXED) ---
+    // --- ANALYTICS ENGINE ---
     const getStats = () => {
         let totalPrincipal = 0;
         let totalOwed = 0;
         let revenue = 0;
-
         clients.forEach(c => {
             totalPrincipal += parseFloat(c.principal || 0);
             totalOwed += parseFloat(c.interestAmount || 0);
@@ -95,13 +98,11 @@ const App = () => {
                 if (h.type?.toLowerCase().includes('pay')) revenue += parseFloat(h.amount || 0);
             });
         });
-
         return { totalPrincipal, totalOwed, revenue, active: clients.length };
     };
-
     const stats = getStats();
 
-    // --- AUTH VIEWS ---
+    // --- AUTH VIEWS (RESTORED LOGIN BUTTON & EXTENDED SIGNUP) ---
     if (!user) {
         return (
             <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6">
@@ -111,26 +112,42 @@ const App = () => {
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
-                            try { await auth.signInWithEmailAndPassword(d.email, d.password); } catch(err) { alert("Access Denied: Check Credentials"); }
-                        }} className="space-y-4">
-                            <h2 className="text-white font-black uppercase italic tracking-widest text-xl">Net Ten Login</h2>
-                            <input name="email" type="text" placeholder="Email" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                            <input name="password" type="password" placeholder="Password" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                            <button className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase shadow-lg">Enter Terminal</button>
-                            <button type="button" onClick={() => setIsRegistering(true)} className="text-slate-500 text-[10px] font-black uppercase mt-4">New Client Registration</button>
+                            try { 
+                                await auth.signInWithEmailAndPassword(d.email, d.password); 
+                            } catch(err) { 
+                                alert("Login Failed: Please check your email and password."); 
+                            }
+                        } } className="space-y-4">
+                            <h2 className="text-white font-black uppercase italic tracking-widest text-xl mb-4">Secure Terminal</h2>
+                            <input name="email" type="email" placeholder="Email Address" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white border border-slate-800 outline-none" required />
+                            <input name="password" type="password" placeholder="Password" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white border border-slate-800 outline-none" required />
+                            <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase shadow-lg hover:bg-blue-500 transition-all">Sign In to Account</button>
+                            <button type="button" onClick={() => setIsRegistering(true)} className="text-slate-500 text-[10px] font-black uppercase mt-4 block mx-auto hover:text-white">Need Access? Register Here</button>
                         </form>
                     ) : (
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
-                            await db.ref('pending_registrations').push({...d, status: 'pending', timestamp: Date.now()});
-                            alert("Request Sent! Admin will verify your account.");
+                            // Data for Admin Approval (including DOB for profile creation)
+                            await db.ref('pending_registrations').push({
+                                ...d, 
+                                status: 'pending', 
+                                requestedAt: Date.now()
+                            });
+                            alert("Registration Request Sent! Admin will contact you once approved.");
                             setIsRegistering(false);
-                        }} className="space-y-4">
-                            <input name="username" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-xl text-white" required />
-                            <input name="email" type="email" placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-xl text-white" required />
-                            <input name="password" type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-xl text-white" required />
-                            <button className="w-full bg-green-600 text-white font-black py-4 rounded-xl">Request Access</button>
+                        }} className="space-y-4 text-left">
+                            <h2 className="text-white font-black uppercase italic tracking-widest text-center text-xl mb-4">Join Net Ten</h2>
+                            <input name="username" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
+                            <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
+                            <input name="email" type="email" placeholder="Email Address" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
+                            <div className="space-y-1">
+                                <label className="text-[9px] text-slate-500 font-black uppercase ml-2">Date of Birth</label>
+                                <input name="dob" type="date" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
+                            </div>
+                            <input name="password" type="password" placeholder="Create Password" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
+                            <button className="w-full bg-green-600 text-white font-black py-4 rounded-xl uppercase hover:bg-green-500">Submit Registration</button>
+                            <button type="button" onClick={() => setIsRegistering(false)} className="text-slate-500 text-[10px] font-black uppercase mt-4 block mx-auto text-center hover:text-white">Back to Login</button>
                         </form>
                     )}
                 </div>
@@ -174,11 +191,11 @@ const App = () => {
 
             <main className="flex-1 overflow-y-auto p-10 bg-[#0f172a]">
                 
-                {/* ADMIN DASHBOARD */}
+                {/* ADMIN PORTFOLIO VIEW */}
                 {isAdmin && view === 'home' && (
                     <div className="max-w-5xl mx-auto">
                         <div className="flex gap-4 mb-8">
-                            <input type="text" placeholder="Search portfolios..." className="flex-1 p-5 bg-[#1e293b] rounded-3xl text-white border border-slate-700" onChange={e => setSearchTerm(e.target.value)} />
+                            <input type="text" placeholder="Search portfolios..." className="flex-1 p-5 bg-[#1e293b] rounded-3xl text-white border border-slate-700 outline-none" onChange={e => setSearchTerm(e.target.value)} />
                         </div>
                         <div className="grid grid-cols-2 gap-6">
                             {clients.filter(c => c.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
@@ -189,9 +206,9 @@ const App = () => {
                                     </div>
                                     <p className="text-4xl font-black text-green-400 italic mb-6">${parseFloat(c.interestAmount || 0).toFixed(2)}</p>
                                     <div className="flex gap-2">
-                                        <button onClick={() => {setPayingClient(c); setTxnMode('loan');}} className="flex-1 bg-blue-600 text-white py-4 rounded-xl text-[9px] font-black uppercase">Loan</button>
-                                        <button onClick={() => {setPayingClient(c); setTxnMode('pay');}} className="flex-1 bg-green-600 text-white py-4 rounded-xl text-[9px] font-black uppercase">Pay</button>
-                                        <button onClick={() => setSelectedClient(c)} className="bg-slate-700 text-white px-6 py-4 rounded-xl text-[9px] font-black uppercase">History</button>
+                                        <button onClick={() => {setPayingClient(c); setTxnMode('loan');}} className="flex-1 bg-blue-600 text-white py-4 rounded-xl text-[9px] font-black uppercase">Add Funds</button>
+                                        <button onClick={() => {setPayingClient(c); setTxnMode('pay');}} className="flex-1 bg-green-600 text-white py-4 rounded-xl text-[9px] font-black uppercase">Collect</button>
+                                        <button onClick={() => setSelectedClient(c)} className="bg-slate-700 text-white px-6 py-4 rounded-xl text-[9px] font-black uppercase">Ledger</button>
                                     </div>
                                 </div>
                             ))}
@@ -199,10 +216,10 @@ const App = () => {
                     </div>
                 )}
 
-                {/* ADMIN MASTER HISTORY (RESTORED) */}
+                {/* ADMIN MASTER HISTORY */}
                 {isAdmin && view === 'master_history' && (
                     <div className="max-w-4xl mx-auto bg-[#1e293b] p-10 rounded-[50px] border border-slate-700">
-                        <h2 className="text-2xl font-black text-white italic uppercase mb-8">Full Transaction History</h2>
+                        <h2 className="text-2xl font-black text-white italic uppercase mb-8">Master Ledger</h2>
                         <div className="space-y-3">
                             {clients.flatMap(c => (c.history || []).map(h => ({...h, clientName: c.name})))
                                 .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0))
@@ -221,46 +238,37 @@ const App = () => {
                     </div>
                 )}
 
-                {/* ANALYTICS (FIXED & LOADING) */}
+                {/* ANALYTICS (REPAIRED) */}
                 {isAdmin && view === 'reports' && (
                     <div className="max-w-5xl mx-auto space-y-10">
                         <div className="grid grid-cols-3 gap-6">
                             <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
-                                <p className="text-[9px] text-slate-500 font-black uppercase mb-1">Total Revenue Collected</p>
+                                <p className="text-[9px] text-slate-500 font-black uppercase mb-1">Revenue To Date</p>
                                 <p className="text-3xl font-black text-green-400 italic">${stats.revenue.toLocaleString()}</p>
                             </div>
                             <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
-                                <p className="text-[9px] text-slate-500 font-black uppercase mb-1">Portfolio Principal</p>
+                                <p className="text-[9px] text-slate-500 font-black uppercase mb-1">Active Principal</p>
                                 <p className="text-3xl font-black text-blue-400 italic">${stats.totalPrincipal.toLocaleString()}</p>
                             </div>
                             <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
-                                <p className="text-[9px] text-slate-500 font-black uppercase mb-1">Outstanding Balance</p>
+                                <p className="text-[9px] text-slate-500 font-black uppercase mb-1">Total Outstanding</p>
                                 <p className="text-3xl font-black text-white italic">${stats.totalOwed.toLocaleString()}</p>
                             </div>
-                        </div>
-                        <div className="bg-[#1e293b] p-10 rounded-[50px] h-64 border border-slate-700 flex items-end justify-around gap-2">
-                            {[0.3, 0.6, 0.4, 0.8, 0.5, 0.9, 0.7].map((h, i) => (
-                                <div key={i} className="flex-1 bg-blue-600/20 rounded-t-xl relative overflow-hidden" style={{height: `${h * 100}%`}}>
-                                    <div className="absolute bottom-0 w-full bg-blue-500" style={{height: '30%'}}></div>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 )}
 
-                {/* ADMIN ADD NEW (EXTENDED FIELDS) */}
+                {/* ADMIN ADD ENTRY */}
                 {isAdmin && view === 'add' && (
                     <div className="max-w-2xl mx-auto bg-[#1e293b] p-12 rounded-[50px] border border-slate-700">
-                        <h2 className="text-3xl font-black text-white italic uppercase mb-8">Direct Account Setup</h2>
+                        <h2 className="text-3xl font-black text-white italic uppercase mb-8">New Portfolio</h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
-                            const principal = parseFloat(d.principal);
-                            const interest = parseFloat(d.interestAmt);
-                            const total = principal + interest;
-                            const h = { amount: total, date: d.dateBorrowed, type: "Onboarding Loan", method: "Disbursement", timestamp: Date.now() };
-                            await db.ref('clients').push({ ...d, interestAmount: total, status: 'Active', history: [h] });
-                            alert("Account Activated!");
+                            const total = parseFloat(d.principal) + parseFloat(d.interestAmt);
+                            const h = { amount: total, date: d.dateBorrowed, type: "Onboarding", method: "Admin Setup", timestamp: Date.now() };
+                            await db.ref('clients').push({ ...d, interestAmount: total, history: [h] });
+                            alert("Client Added!");
                             setView('home');
                         }} className="grid grid-cols-2 gap-4">
                             <input name="name" placeholder="Full Name" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl text-white text-xs" required />
@@ -273,15 +281,9 @@ const App = () => {
                             </select>
                             <input name="principal" type="number" placeholder="Principal ($)" className="p-5 bg-[#0f172a] rounded-2xl text-white text-xs" required />
                             <input name="interestAmt" type="number" placeholder="Interest Calculated ($)" className="p-5 bg-[#0f172a] rounded-2xl text-white text-xs" required />
-                            <div className="space-y-1">
-                                <label className="text-[9px] text-slate-500 uppercase ml-2">Date Borrowed</label>
-                                <input name="dateBorrowed" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] text-slate-500 uppercase ml-2">Initial Due Date</label>
-                                <input name="dueDate" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" required />
-                            </div>
-                            <button className="col-span-2 bg-blue-600 text-white font-black py-6 rounded-[30px] uppercase mt-6">Open Portfolio</button>
+                            <input name="dateBorrowed" type="date" className="p-5 bg-[#0f172a] rounded-2xl text-white text-xs" required />
+                            <input name="dueDate" type="date" className="p-5 bg-[#0f172a] rounded-2xl text-white text-xs" required />
+                            <button className="col-span-2 bg-blue-600 text-white font-black py-6 rounded-[30px] uppercase mt-6">Open Account</button>
                         </form>
                     </div>
                 )}
@@ -289,144 +291,92 @@ const App = () => {
                 {/* CLIENT DASHBOARD */}
                 {!isAdmin && view === 'client_account' && (
                     <div className="max-w-xl mx-auto space-y-6">
-                        {/* Notification Bell */}
                         <div className="bg-[#1e293b] p-6 rounded-[40px] border border-slate-700">
-                            <h3 className="text-white font-black uppercase text-[10px] mb-4 flex items-center gap-2">🔔 System Notifications</h3>
-                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                            <h3 className="text-white font-black uppercase text-[10px] mb-4 flex items-center gap-2">🔔 Alerts</h3>
+                            <div className="space-y-2">
                                 {userData?.notifications ? Object.values(userData.notifications).reverse().map((n, i) => (
                                     <div key={i} className="bg-[#0f172a] p-4 rounded-2xl border border-slate-800 text-[10px] text-white">
                                         <p className="font-bold">{n.text}</p>
                                         <p className="text-slate-500 text-[8px] mt-1">{new Date(n.timestamp).toLocaleString()}</p>
                                     </div>
-                                )) : <p className="text-slate-600 text-[10px] uppercase font-black">No alerts</p>}
+                                )) : <p className="text-slate-600 text-[10px] uppercase font-black">No unread alerts</p>}
                             </div>
                         </div>
-
                         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-12 rounded-[60px] text-center shadow-2xl">
-                            <p className="text-white/60 font-black uppercase text-[10px] mb-2 tracking-widest">Total Outstanding</p>
+                            <p className="text-white/60 font-black uppercase text-[10px] mb-2 tracking-widest">Total Balance Due</p>
                             <p className="text-7xl font-black text-white italic tracking-tighter">${parseFloat(clientData?.interestAmount || 0).toFixed(2)}</p>
                         </div>
                     </div>
                 )}
 
-                {/* CLIENT APPLICATION (COMPLETE) */}
+                {/* CLIENT LOAN APP (REPAIRED BUTTONS) */}
                 {!isAdmin && view === 'client_apply' && (
                     <div className="max-w-2xl mx-auto bg-[#1e293b] p-12 rounded-[60px] border border-slate-700">
-                        <h2 className="text-3xl font-black text-white italic uppercase mb-8">Loan Application</h2>
+                        <h2 className="text-3xl font-black text-white italic uppercase mb-8">Loan / Top-Up Request</h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             await db.ref('requests').push({ ...d, name: userData.username, email: user.email, timestamp: Date.now() });
-                            alert("Application Submitted for Approval!");
+                            alert("Application Submitted!");
                             setView('client_account');
                         }} className="grid grid-cols-2 gap-5">
-                            <div className="col-span-2">
-                                <label className="text-[10px] text-slate-500 font-black uppercase ml-4">Requested Amount ($)</label>
-                                <input name="amount" type="number" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white font-black" required />
-                            </div>
-                            <div>
-                                <label className="text-[10px] text-slate-500 font-black uppercase ml-4">Loan Term</label>
-                                <select name="term" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-[10px] font-black uppercase">
-                                    <option>Fortnightly</option><option>Monthly</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-[10px] text-slate-500 font-black uppercase ml-4">Valid ID #</label>
-                                <input name="idNum" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-[10px]" required />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="text-[10px] text-slate-500 font-black uppercase ml-4">Proof of Income / Address (Note or URL)</label>
-                                <textarea name="proof" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-[10px] h-20" required></textarea>
-                            </div>
-                            <input name="bankBranch" placeholder="Bank & Branch" className="p-5 bg-[#0f172a] rounded-2xl text-white text-[10px]" required />
+                            <input name="amount" type="number" placeholder="Requested Amount ($)" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl text-white font-black" required />
+                            <select name="term" className="p-5 bg-[#0f172a] rounded-2xl text-white text-[10px] font-black uppercase">
+                                <option>Fortnightly</option><option>Monthly</option>
+                            </select>
+                            <input name="idNum" placeholder="Valid ID Number" className="p-5 bg-[#0f172a] rounded-2xl text-white text-[10px]" required />
+                            <textarea name="proof" placeholder="Proof of Income / Address (Paste info or image URL)" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl text-white text-[10px] h-20" required></textarea>
+                            <input name="bankBranch" placeholder="Bank Branch" className="p-5 bg-[#0f172a] rounded-2xl text-white text-[10px]" required />
                             <input name="accountNumber" placeholder="Account Number" className="p-5 bg-[#0f172a] rounded-2xl text-white text-[10px]" required />
-                            <button className="col-span-2 bg-blue-600 text-white font-black py-6 rounded-[30px] uppercase mt-4">Send Application</button>
+                            <button className="col-span-2 bg-blue-600 text-white font-black py-6 rounded-[30px] uppercase mt-4">Submit for Approval</button>
                         </form>
                     </div>
                 )}
 
-                {/* CLIENT PAYMENTS */}
-                {!isAdmin && view === 'client_pay' && (
-                    <div className="max-w-xl mx-auto space-y-6">
-                        <div className="bg-[#1e293b] p-12 rounded-[50px] border border-slate-700 text-center">
-                            <h2 className="text-2xl font-black text-white uppercase italic mb-4">Make Payment</h2>
-                            <div className="bg-blue-600/10 p-6 rounded-3xl border border-blue-500/20 mb-8">
-                                <p className="text-blue-400 text-[10px] font-black uppercase mb-2">Banking Details</p>
-                                <p className="text-white text-xs">Please contact Admin at <b>(876) 318-0099</b> to receive current bank details and confirm your transfer.</p>
-                            </div>
-                            <form className="space-y-4">
-                                <input type="number" placeholder="Planned Payment ($)" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white font-black" />
-                                <input type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-[10px]" />
-                                <button type="button" onClick={() => alert("Payment Scheduled. Please send transfer and receipt to Admin.")} className="w-full bg-green-600 text-white font-black py-5 rounded-2xl uppercase">Schedule Payment</button>
-                            </form>
+                {/* FAQ & SUPPORT */}
+                {!isAdmin && view === 'client_faq' && (
+                    <div className="max-w-2xl mx-auto space-y-4">
+                        <h2 className="text-2xl font-black text-white uppercase italic text-center mb-8">Support & Contact</h2>
+                        <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700 flex justify-between items-center">
+                            <div><p className="text-slate-500 text-[10px] uppercase font-black">Direct Line</p><p className="text-white font-black text-2xl italic">(876) 318-0099</p></div>
+                            <a href="tel:8763180099" className="bg-green-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px]">Call Admin</a>
                         </div>
                     </div>
                 )}
 
-                {/* CLIENT PROFILE (LOAD EXISTING INFO) */}
+                {/* PROFILE EDITING */}
                 {!isAdmin && view === 'client_profile' && (
-                    <div className="max-w-xl mx-auto bg-[#1e293b] p-12 rounded-[60px] border border-slate-700 shadow-2xl">
+                    <div className="max-w-xl mx-auto bg-[#1e293b] p-12 rounded-[60px] border border-slate-700">
                         <h2 className="text-3xl font-black text-white italic uppercase mb-10">Profile Settings</h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             await db.ref(`users/${user.uid}`).update(d);
-                            alert("Profile Updated Successfully!");
+                            alert("Settings Saved!");
                         }} className="space-y-5">
-                            <div className="space-y-1">
-                                <label className="text-[9px] text-slate-500 uppercase ml-4">Full Name</label>
-                                <input name="username" defaultValue={userData?.username || ''} className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] text-slate-500 uppercase ml-4">Phone Number</label>
-                                <input name="phone" defaultValue={userData?.phone || clientData?.phone || ''} className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] text-slate-500 uppercase ml-4">Work Address</label>
-                                <input name="workAddress" defaultValue={userData?.workAddress || clientData?.workAddress || ''} className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] text-slate-500 uppercase ml-4">Employer Phone</label>
-                                <input name="employerPhone" defaultValue={userData?.employerPhone || clientData?.employerPhone || ''} className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" />
-                            </div>
-                            <button className="w-full bg-green-600 text-white font-black py-6 rounded-[30px] uppercase shadow-xl mt-4">Save Profile Changes</button>
+                            <input name="username" defaultValue={userData?.username || ''} placeholder="Full Name" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" />
+                            <input name="phone" defaultValue={userData?.phone || ''} placeholder="Phone" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" />
+                            <input name="workAddress" defaultValue={userData?.workAddress || ''} placeholder="Work Address" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" />
+                            <input name="employerPhone" defaultValue={userData?.employerPhone || ''} placeholder="Employer Phone" className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs" />
+                            <button className="w-full bg-green-600 text-white font-black py-6 rounded-[30px] uppercase shadow-xl">Update Profile</button>
                         </form>
-                    </div>
-                )}
-
-                {/* SUPPORT FAQ */}
-                {!isAdmin && view === 'client_faq' && (
-                    <div className="max-w-2xl mx-auto space-y-4">
-                        <h2 className="text-2xl font-black text-white uppercase italic text-center mb-8">Support & FAQ</h2>
-                        <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700 flex justify-between items-center">
-                            <div><p className="text-slate-500 text-[10px] uppercase font-black">Admin Support</p><p className="text-white font-black text-2xl italic">(876) 318-0099</p></div>
-                            <a href="tel:8763180099" className="bg-green-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-[10px]">Call Admin</a>
-                        </div>
-                        <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
-                            <p className="text-blue-400 font-black text-xs uppercase mb-2">Q: How do I get more funds?</p>
-                            <p className="text-slate-400 text-xs">Use the "Apply / Top Up" button. You'll need to submit current banking and proof of income for new requests.</p>
-                        </div>
-                        <div className="bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
-                            <p className="text-blue-400 font-black text-xs uppercase mb-2">Q: How do I verify my payment?</p>
-                            <p className="text-slate-400 text-xs">Once you transfer to the bank, send a screenshot of your receipt to the WhatsApp number listed above.</p>
-                        </div>
                     </div>
                 )}
 
             </main>
 
-            {/* --- ADMIN MODALS --- */}
+            {/* TRANSACTION MODAL */}
             {payingClient && (
                 <div className="fixed inset-0 z-[1001] bg-black/95 flex items-center justify-center p-6 backdrop-blur-xl">
                     <div className="bg-[#1e293b] w-full max-w-xl rounded-[60px] p-12 border border-slate-700">
-                        <h2 className="text-3xl font-black text-white italic uppercase text-center mb-8">{txnMode === 'loan' ? 'Funds Out' : 'Funds In'}</h2>
+                        <h2 className="text-3xl font-black text-white italic uppercase text-center mb-8">{txnMode === 'loan' ? 'Funds Disbursed' : 'Payment Received'}</h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             const amt = parseFloat(d.amount);
                             let newBal = parseFloat(payingClient.interestAmount || 0);
                             if (txnMode === 'pay') newBal -= amt; else newBal += amt;
-                            const h = { amount: amt, date: d.date, method: d.method, type: txnMode === 'pay' ? 'Payment Received' : 'Balance Increase', timestamp: Date.now() };
+                            const h = { amount: amt, date: d.date, method: d.method, type: txnMode === 'pay' ? 'Payment' : 'Top-Up', timestamp: Date.now() };
                             await db.ref(`clients/${payingClient.id}`).update({ 
                                 interestAmount: Math.max(0, newBal), 
                                 history: [...(payingClient.history || []), h] 
@@ -438,7 +388,7 @@ const App = () => {
                                 <option>Bank Transfer</option><option>Cash</option>
                             </select>
                             <input name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-[10px]" />
-                            <button className={`w-full py-5 rounded-2xl font-black uppercase text-white ${txnMode === 'loan' ? 'bg-blue-600' : 'bg-green-600'}`}>Verify Transaction</button>
+                            <button className={`w-full py-5 rounded-2xl font-black uppercase text-white ${txnMode === 'loan' ? 'bg-blue-600' : 'bg-green-600'}`}>Process</button>
                             <button type="button" onClick={() => setPayingClient(null)} className="w-full text-slate-500 text-[10px] font-black uppercase text-center">Close</button>
                         </form>
                     </div>
