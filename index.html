@@ -52,7 +52,6 @@ const App = () => {
         const unsubscribe = auth.onAuthStateChanged(u => {
             setUser(u);
             if (u) {
-                // Listen to User Profile
                 db.ref(`users/${u.uid}`).on('value', s => {
                     const data = s.val();
                     setUserData(data);
@@ -67,21 +66,18 @@ const App = () => {
             }
         });
 
-        // Portfolio Data
         db.ref('clients').on('value', s => {
             const list = [];
             if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
             setClients(list);
         });
 
-        // Loan Requests
         db.ref('requests').on('value', s => {
             const list = [];
             if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
             setRequests(list);
         });
 
-        // Account Requests
         db.ref('pending_registrations').on('value', s => {
             const list = [];
             if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
@@ -94,12 +90,13 @@ const App = () => {
     const isAdmin = user?.email === ADMIN_EMAIL;
     const clientData = clients.find(c => c.email === user?.email);
 
-    // --- 3. CALCULATOR / ANALYTICS LOGIC ---
+    // --- 3. CALCULATOR / ANALYTICS LOGIC (CRASH PROTECTION ADDED HERE) ---
     const getStats = () => {
         const totalPrincipal = clients.reduce((sum, c) => sum + parseFloat(c.principal || 0), 0);
         const totalBalance = clients.reduce((sum, c) => sum + parseFloat(c.interestAmount || 0), 0);
         const totalCollected = clients.reduce((sum, c) => {
-            const payments = (c.history || []).filter(h => h.type.toLowerCase().includes('pay'));
+            // Added safety check: h.type?.toLowerCase() prevents the crash if type is missing
+            const payments = (c.history || []).filter(h => h.type?.toLowerCase().includes('pay'));
             return sum + payments.reduce((pSum, p) => pSum + parseFloat(p.amount || 0), 0);
         }, 0);
 
@@ -222,7 +219,7 @@ const App = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
-                            {clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
+                            {clients.filter(c => c.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
                                 <div key={c.id} className="bg-[#1e293b] p-8 rounded-[45px] border border-slate-700 hover:border-blue-500 transition-all shadow-lg">
                                     <div className="flex justify-between items-start mb-4">
                                         <div>
@@ -236,7 +233,7 @@ const App = () => {
                                     </div>
                                     <div className="mb-6">
                                         <p className="text-slate-500 text-[9px] font-black uppercase mb-1">Current Balance</p>
-                                        <p className="text-5xl font-black text-green-400 italic">${parseFloat(c.interestAmount).toFixed(2)}</p>
+                                        <p className="text-5xl font-black text-green-400 italic">${parseFloat(c.interestAmount || 0).toFixed(2)}</p>
                                     </div>
                                     <div className="flex gap-3">
                                         <button onClick={() => {setPayingClient(c); setTxnMode('loan');}} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl text-[9px] font-black uppercase shadow-lg active:scale-95 transition-all">Issue Funds</button>
@@ -260,15 +257,15 @@ const App = () => {
                                 clients.flatMap(c => 
                                     (c.history || []).map((h, i) => ({...h, clientName: c.name}))
                                 )
-                                .sort((a,b) => b.timestamp - a.timestamp)
+                                .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0))
                                 .map((h, i) => (
                                     <div key={i} className="flex justify-between items-center bg-[#0f172a] p-5 rounded-3xl border border-slate-800">
                                         <div>
                                             <p className="text-blue-400 font-black text-xs uppercase mb-1">{h.clientName}</p>
                                             <p className="text-[10px] text-slate-500 font-bold uppercase">{h.date} — {h.type} via {h.method}</p>
                                         </div>
-                                        <p className={`font-black text-sm italic ${h.type.toLowerCase().includes('pay') ? 'text-green-400' : 'text-blue-400'}`}>
-                                            {h.type.toLowerCase().includes('pay') ? '-' : '+'}${parseFloat(h.amount).toFixed(2)}
+                                        <p className={`font-black text-sm italic ${h.type?.toLowerCase().includes('pay') ? 'text-green-400' : 'text-blue-400'}`}>
+                                            {h.type?.toLowerCase().includes('pay') ? '-' : '+'}${parseFloat(h.amount || 0).toFixed(2)}
                                         </p>
                                     </div>
                                 ))
@@ -304,8 +301,9 @@ const App = () => {
                             <h3 className="text-white font-black uppercase text-xs mb-8 italic">Performance Breakdown</h3>
                             <div className="space-y-6">
                                 {clients.map(c => {
-                                    const collected = (c.history || []).filter(h => h.type.toLowerCase().includes('pay')).reduce((s, h) => s + parseFloat(h.amount), 0);
-                                    const progress = Math.min(100, (collected / (parseFloat(c.principal) + (parseFloat(c.interestAmt) || 0)) * 100));
+                                    const collected = (c.history || []).filter(h => h.type?.toLowerCase().includes('pay')).reduce((s, h) => s + parseFloat(h.amount || 0), 0);
+                                    const totalExpected = (parseFloat(c.principal || 0) + (parseFloat(c.interestAmt || 0)));
+                                    const progress = totalExpected === 0 ? 0 : Math.min(100, (collected / totalExpected) * 100);
                                     return (
                                         <div key={c.id}>
                                             <div className="flex justify-between text-[10px] font-black uppercase mb-2">
@@ -331,7 +329,7 @@ const App = () => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             const total = parseFloat(d.principal) + parseFloat(d.interestAmt);
-                            const h = { amount: total, date: d.dateBorrowed, type: "Initial Dispursement", method: d.disbursement, timestamp: Date.now() };
+                            const h = { amount: total, date: d.dateBorrowed, type: "Initial Disbursement", method: d.disbursement, timestamp: Date.now() };
                             await db.ref('clients').push({ ...d, interestAmount: total, status: 'Active', history: [h] });
                             alert("Loan Portfolio Successfully Created!");
                             setView('home');
@@ -419,8 +417,8 @@ const App = () => {
                                             <p className="text-white font-black text-[10px] uppercase mb-1">{h.type}</p>
                                             <p className="text-[9px] text-slate-500 font-bold uppercase">{h.date} — {h.method}</p>
                                         </div>
-                                        <p className={`font-black text-sm italic ${h.type.toLowerCase().includes('pay') ? 'text-green-400' : 'text-blue-400'}`}>
-                                            {h.type.toLowerCase().includes('pay') ? '-' : '+'}${parseFloat(h.amount).toFixed(2)}
+                                        <p className={`font-black text-sm italic ${h.type?.toLowerCase().includes('pay') ? 'text-green-400' : 'text-blue-400'}`}>
+                                            {h.type?.toLowerCase().includes('pay') ? '-' : '+'}${parseFloat(h.amount || 0).toFixed(2)}
                                         </p>
                                     </div>
                                 ))}
@@ -429,7 +427,7 @@ const App = () => {
                     </div>
                 )}
 
-                {/* VIEW: CLIENT PROFILE SETTINGS (Enhanced with Existing Data) */}
+                {/* VIEW: CLIENT PROFILE SETTINGS */}
                 {!isAdmin && view === 'client_profile' && (
                     <div className="max-w-xl mx-auto bg-[#1e293b] p-12 rounded-[60px] border border-slate-700 shadow-2xl">
                         <h2 className="text-3xl font-black text-white italic uppercase mb-10">Profile & Info Settings</h2>
@@ -463,61 +461,7 @@ const App = () => {
                                     <input name="employerPhone" defaultValue={userData?.savedLoanDetails?.employerPhone || ''} className="w-full p-5 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-800" />
                                 </div>
                             </div>
-                            <div className="p-6 bg-blue-600/5 rounded-3xl border border-blue-500/10">
-                                <p className="text-[10px] text-blue-400 font-black uppercase mb-1">Bank Account on File</p>
-                                <p className="text-white text-xs font-bold">{userData?.savedLoanDetails?.bankAcc || 'None Provided'}</p>
-                            </div>
                             <button className="w-full bg-green-600 text-white font-black py-6 rounded-[30px] uppercase shadow-xl hover:bg-green-500 transition-all">Update Secure File</button>
-                        </form>
-                    </div>
-                )}
-
-                {/* VIEW: CLIENT NEW APPLICATION */}
-                {!isAdmin && view === 'client_apply' && (
-                    <div className="max-w-2xl mx-auto bg-[#1e293b] p-12 rounded-[60px] border border-slate-700 shadow-2xl">
-                        <h2 className="text-3xl font-black text-white italic uppercase mb-8">Loan Application</h2>
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const d = Object.fromEntries(new FormData(e.target).entries());
-                            if (!userData?.savedLoanDetails) {
-                                await db.ref(`users/${user.uid}/savedLoanDetails`).update({
-                                    bankAcc: d.bankAcc || '',
-                                    bankBranch: d.bankBranch || '',
-                                    idNumber: d.idNumber || ''
-                                });
-                            }
-                            await db.ref('requests').push({ 
-                                ...d, 
-                                name: userData.username, 
-                                email: user.email, 
-                                status: 'Pending Approval', 
-                                timestamp: Date.now()
-                            });
-                            alert("Application Submitted!");
-                            setView('client_account');
-                        }} className="grid grid-cols-2 gap-5">
-                            <div className="col-span-2">
-                                <label className="text-[10px] text-slate-500 font-black uppercase ml-4 mb-2 block tracking-widest">Requested Amount</label>
-                                <input name="amount" type="number" placeholder="$0.00" className="w-full p-6 bg-[#0f172a] rounded-[30px] text-white border border-slate-800 text-3xl font-black" required />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="text-[10px] text-slate-500 font-black uppercase ml-4 mb-2 block tracking-widest">Repayment Frequency</label>
-                                <select name="term" className="w-full p-5 bg-[#0f172a] rounded-[25px] text-white text-xs font-black uppercase border border-slate-800">
-                                    <option>Fortnightly</option><option>Monthly</option>
-                                </select>
-                            </div>
-                            {!userData?.savedLoanDetails ? (
-                                <>
-                                    <input name="bankBranch" placeholder="Bank & Branch Name" className="p-5 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-800" required />
-                                    <input name="bankAcc" placeholder="Account Number" className="p-5 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-800" required />
-                                    <input name="idNumber" placeholder="Valid ID # (TRN)" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl text-white text-xs border border-slate-800" required />
-                                </>
-                            ) : (
-                                <div className="col-span-2 p-6 bg-blue-600/5 border border-blue-500/20 rounded-[35px] text-center">
-                                    <p className="text-[11px] text-slate-400 font-bold uppercase italic">Using your saved identity & banking details.</p>
-                                </div>
-                            )}
-                            <button className="col-span-2 bg-blue-600 text-white font-black py-6 rounded-[30px] uppercase mt-6 shadow-2xl hover:bg-blue-500 transition-all text-sm">Post Application</button>
                         </form>
                     </div>
                 )}
@@ -536,7 +480,7 @@ const App = () => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             const amt = parseFloat(d.amount);
-                            let newBal = parseFloat(payingClient.interestAmount);
+                            let newBal = parseFloat(payingClient.interestAmount || 0);
                             if (txnMode === 'pay') newBal -= amt; else newBal += amt;
                             const h = { amount: amt, date: d.date, method: d.method, type: d.txnType, timestamp: Date.now() };
                             await db.ref(`clients/${payingClient.id}`).update({ 
@@ -566,7 +510,7 @@ const App = () => {
                 </div>
             )}
 
-            {/* --- MODAL: CLIENT HISTORY (Restored) --- */}
+            {/* --- MODAL: CLIENT HISTORY --- */}
             {selectedClient && (
                 <div className="fixed inset-0 z-[1001] bg-black/95 flex items-center justify-center p-6 backdrop-blur-xl">
                     <div className="bg-[#1e293b] w-full max-w-2xl rounded-[60px] p-12 border border-slate-700 max-h-[85vh] overflow-y-auto">
@@ -585,8 +529,8 @@ const App = () => {
                                             <p className="text-[9px] text-slate-600 font-black uppercase italic">{h.method}</p>
                                         </div>
                                         <div className="flex items-center gap-6">
-                                            <span className={`font-black italic text-sm ${h.type.toLowerCase().includes('pay') ? 'text-green-400' : 'text-blue-400'}`}>
-                                                ${parseFloat(h.amount).toFixed(2)}
+                                            <span className={`font-black italic text-sm ${h.type?.toLowerCase().includes('pay') ? 'text-green-400' : 'text-blue-400'}`}>
+                                                ${parseFloat(h.amount || 0).toFixed(2)}
                                             </span>
                                             <button onClick={() => {
                                                 const newH = selectedClient.history.filter((_, idx) => (selectedClient.history.length - 1 - idx) !== i);
