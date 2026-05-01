@@ -19,286 +19,101 @@
 // ... Firebase Config and initialization remain the same ...
 // ... Firebase Config and initialization remain the same ...
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
-    authDomain: "net-ten-accounting.firebaseapp.com",
-    databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
-    projectId: "net-ten-accounting",
-    storageBucket: "net-ten-accounting.appspot.com",
-    messagingSenderId: "1095937995425",
-    appId: "1:1095937995425:web:9d2089d7044a007e6336e0"
-};
+// ... (Keep the previous Firebase Config, Imports, and App State) ...
 
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
-const ADMIN_EMAIL = "winstonhmcdonald@gmail.com";
-
-const App = () => {
-    // --- 1. ALL STATES RESTORED ---
-    const [user, setUser] = React.useState(null);
-    const [userData, setUserData] = React.useState(null);
-    const [view, setView] = React.useState('home'); 
-    const [isRegistering, setIsRegistering] = React.useState(false);
-    const [clients, setClients] = React.useState([]);
-    const [requests, setRequests] = React.useState([]);
-    const [pendingUsers, setPendingUsers] = React.useState([]);
-    const [searchTerm, setSearchTerm] = React.useState('');
-    const [payingClient, setPayingClient] = React.useState(null);
-    const [selectedClient, setSelectedClient] = React.useState(null);
-    const [isNewLoanView, setIsNewLoanView] = React.useState(false);
-    const [msgTarget, setMsgTarget] = React.useState(null);
-
-    // --- 2. ALL LISTENERS RESTORED ---
-    React.useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged(u => {
-            setUser(u);
-            if (u) {
-                db.ref(`users/${u.uid}`).on('value', s => {
-                    const data = s.val();
-                    setUserData(data);
-                    // Pop-up Alert Logic
-                    if (data?.popupMsg) {
-                        alert(`MESSAGE FROM NET TEN: ${data.popupMsg}`);
-                        db.ref(`users/${u.uid}/popupMsg`).remove();
-                    }
-                });
-                if (u.email !== ADMIN_EMAIL) setView('client_home');
-            } else { setView('login'); }
-        });
-
-        // Admin Data Listeners
-        db.ref('clients').on('value', s => {
-            const list = [];
-            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
-            setClients(list);
-        });
-        db.ref('pending_registrations').on('value', s => {
-            const list = [];
-            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
-            setPendingUsers(list);
-        });
-        db.ref('requests').on('value', s => {
-            const list = [];
-            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
-            setRequests(list);
-        });
-
-        return () => unsubscribe();
-    }, []);
-
-    const isAdmin = user?.email === ADMIN_EMAIL;
-    const clientData = clients.find(c => c.email === user?.email);
-
-    // --- 3. LOGIN & REGISTRATION LOGIC ---
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-[#0f172a]">
-                <div className="bg-[#1e293b] p-8 rounded-[40px] shadow-2xl w-full max-w-md border border-slate-700 text-center">
-                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-24 h-24 mx-auto mb-4" />
-                    {!isRegistering ? (
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const d = Object.fromEntries(new FormData(e.target).entries());
-                            try { await auth.signInWithEmailAndPassword(d.email, d.password); } catch(err) { alert("Invalid Credentials"); }
-                        }} className="space-y-4">
-                            <input name="email" type="email" placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                            <input name="password" type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                            <button className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase shadow-lg">Log In</button>
-                            <button type="button" onClick={() => setIsRegistering(true)} className="text-slate-500 text-[10px] font-black uppercase mt-4 block mx-auto">Apply for Account</button>
-                        </form>
-                    ) : (
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const d = Object.fromEntries(new FormData(e.target).entries());
-                            await db.ref('pending_registrations').push({...d, timestamp: Date.now()});
-                            alert("Application Sent! Winston will review your account soon.");
-                            setIsRegistering(false);
-                        }} className="space-y-4">
-                            <input name="name" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
-                            <input name="email" type="email" placeholder="Email" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
-                            <input name="employerPhone" placeholder="Employer Phone #" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
-                            <input name="password" type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
-                            <button className="w-full bg-green-600 text-white font-black py-4 rounded-2xl uppercase">Submit Registration</button>
-                            <button type="button" onClick={() => setIsRegistering(false)} className="text-slate-500 text-[10px] font-black uppercase mt-4 block mx-auto">Back to Login</button>
-                        </form>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="min-h-screen bg-[#0f172a] flex overflow-hidden">
-            {/* SIDEBAR */}
-            <aside className="w-64 bg-[#1e293b] border-r border-slate-800 shrink-0 flex flex-col">
-                <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-8 h-8" />
-                    <h1 className="text-lg font-black text-white italic uppercase">Net Ten</h1>
-                </div>
-                <nav className="py-4 flex-1">
-                    {isAdmin ? (
-                        <>
-                            <button onClick={() => setView('home')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">📂 Portfolios</button>
-                            <button onClick={() => setView('add')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">➕ Add Portfolio</button>
-                            <button onClick={() => setView('inbox')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">🔔 Inbox ({pendingUsers.length + requests.length})</button>
-                        </>
-                    ) : (
-                        <>
-                            <button onClick={() => setView('client_home')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">🏠 My Account</button>
-                            <button onClick={() => setView('client_apply')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">➕ Apply for Loan</button>
-                            <button onClick={() => setView('client_profile')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">👤 My Profile</button>
-                        </>
-                    )}
-                </nav>
-                <button onClick={() => auth.signOut()} className="m-6 p-4 bg-red-900/10 text-red-500 rounded-2xl text-[10px] font-black uppercase">Sign Out</button>
-            </aside>
-
-            {/* MAIN CONTENT AREA */}
-            <main className="flex-1 overflow-y-auto p-8">
-                
-                {/* VIEW: ADMIN DASHBOARD */}
-                {isAdmin && view === 'home' && (
-                    <div className="max-w-4xl mx-auto">
-                        <input type="text" placeholder="Search Client..." className="w-full p-4 bg-[#1e293b] rounded-2xl text-white text-xs mb-8 border border-slate-700" onChange={e => setSearchTerm(e.target.value)} />
-                        <div className="grid grid-cols-2 gap-4">
-                            {clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
-                                <div key={c.id} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div><h3 className="text-white font-black uppercase text-xs">{c.name}</h3><p className="text-[9px] text-slate-500 uppercase">Due: {c.dueDate}</p></div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => setMsgTarget(c)} className="text-blue-400">🔔</button>
-                                            <button onClick={() => { if(confirm("Delete Portfolio?")) db.ref(`clients/${c.id}`).remove(); }} className="text-red-500 font-black text-[10px]">DELETE</button>
-                                        </div>
-                                    </div>
-                                    <p className="text-3xl font-black text-green-400 italic mb-4">${parseFloat(c.interestAmount).toFixed(2)}</p>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setPayingClient(c)} className="flex-1 bg-blue-600 text-white py-3 rounded-xl text-[8px] font-black uppercase">Add Transaction</button>
-                                        <button onClick={() => setSelectedClient(c)} className="bg-slate-700 text-white px-4 py-3 rounded-xl text-[8px] font-black uppercase">Details/History</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* VIEW: CLIENT HOME (NOT BLANK) */}
-                {!isAdmin && view === 'client_home' && (
-                    <div className="max-w-xl mx-auto bg-[#1e293b] p-10 rounded-[40px] border border-slate-700 text-center">
-                        <h2 className="text-slate-500 font-black uppercase text-[10px] mb-2">Total Balance Due</h2>
-                        <p className="text-6xl font-black text-green-400 italic mb-10">${parseFloat(clientData?.interestAmount || 0).toFixed(2)}</p>
-                        <div className="text-left space-y-4">
-                            <h3 className="text-white font-black uppercase text-[10px] border-b border-slate-800 pb-2">Recent Transactions</h3>
-                            {(clientData?.history || []).slice(-5).reverse().map((h, i) => (
-                                <div key={i} className="flex justify-between bg-[#0f172a] p-4 rounded-2xl border border-slate-800">
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase">{h.date} - {h.type}</span>
-                                    <span className={`text-[10px] font-black ${h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}`}>${h.amount}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* VIEW: CLIENT APPLY (NOT BLANK) */}
-                {!isAdmin && view === 'client_apply' && (
-                    <div className="max-w-md mx-auto bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
-                        <h2 className="text-white font-black uppercase italic mb-6">New Loan Application</h2>
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const d = Object.fromEntries(new FormData(e.target).entries());
-                            await db.ref('requests').push({ ...d, name: userData.name, email: user.email, timestamp: Date.now() });
-                            alert("Request submitted to Net Ten management!");
-                            setView('client_home');
-                        }} className="space-y-4">
-                            <input name="amount" type="number" placeholder="Requested Amount ($)" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
-                            <input name="bankName" placeholder="Your Bank Name" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
-                            <input name="accountNum" placeholder="Account Number" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" required />
-                            <textarea name="reason" placeholder="Reason for loan..." className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800 h-24"></textarea>
-                            <button className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Send Application</button>
-                        </form>
-                    </div>
-                )}
-
-                {/* VIEW: CLIENT PROFILE (NOT BLANK) */}
-                {!isAdmin && view === 'client_profile' && (
-                    <div className="max-w-md mx-auto bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
-                        <h2 className="text-white font-black uppercase italic mb-6">Edit Profile</h2>
-                        <form onSubmit={async (e) => {
-                            e.preventDefault();
-                            const d = Object.fromEntries(new FormData(e.target).entries());
-                            await db.ref(`users/${user.uid}`).update(d);
-                            alert("Profile Updated Successfully!");
-                        }} className="space-y-4">
-                            <input name="name" defaultValue={userData?.name} placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" />
-                            <input name="employerPhone" defaultValue={userData?.employerPhone} placeholder="Employer Phone #" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" />
-                            <input name="address" defaultValue={userData?.address} placeholder="Current Address" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800" />
-                            <button className="w-full bg-green-600 text-white font-black py-4 rounded-xl uppercase">Update My Info</button>
-                        </form>
-                    </div>
-                )}
-
-                {/* VIEW: ADMIN INBOX (NOT BLANK) */}
-                {isAdmin && view === 'inbox' && (
-                    <div className="max-w-2xl mx-auto">
-                        <h2 className="text-white font-black uppercase italic mb-6">Loan Requests & Sign-ups</h2>
-                        {requests.map(r => (
-                            <div key={r.id} className="bg-[#1e293b] p-6 rounded-3xl border-l-4 border-blue-500 mb-4 flex justify-between items-center">
-                                <div>
-                                    <p className="text-white font-black text-xs uppercase">{r.name} - ${r.amount}</p>
-                                    <p className="text-[10px] text-slate-500">{r.bankName} ({r.accountNum})</p>
-                                </div>
-                                <button onClick={() => db.ref(`requests/${r.id}`).remove()} className="text-red-500 font-black text-[10px] uppercase">Dismiss</button>
-                            </div>
-                        ))}
-                        {pendingUsers.map(p => (
-                            <div key={p.id} className="bg-[#1e293b] p-6 rounded-3xl border-l-4 border-green-500 mb-4 flex justify-between items-center">
-                                <div>
-                                    <p className="text-white font-black text-xs uppercase">{p.name} (Sign-up)</p>
-                                    <p className="text-[10px] text-slate-500">{p.email}</p>
-                                </div>
-                                <button onClick={() => db.ref(`pending_registrations/${p.id}`).remove()} className="text-green-500 font-black text-[10px] uppercase">Approve & Clear</button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-            </main>
-
-            {/* MODAL: DETAILS & HISTORY (NOT BLANK) */}
-            {selectedClient && (
-                <div className="fixed inset-0 z-[1000] bg-black/95 flex items-center justify-center p-6 overflow-y-auto">
-                    <div className="bg-[#1e293b] w-full max-w-2xl rounded-[40px] p-10 border border-slate-700">
-                        <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-3xl font-black text-white italic uppercase">{selectedClient.name}</h2>
-                            <button onClick={() => setSelectedClient(null)} className="text-slate-500 font-black uppercase text-xs">Close</button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800"><label className="text-[9px] text-slate-500 font-black uppercase">Employer Phone</label><p className="text-white font-bold">{selectedClient.employerPhone}</p></div>
-                            <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800"><label className="text-[9px] text-slate-500 font-black uppercase">Original Principal</label><p className="text-white font-bold">${selectedClient.principal}</p></div>
-                        </div>
-                        <h3 className="text-white font-black uppercase text-[10px] mb-4">Transaction Log</h3>
-                        <div className="space-y-2">
-                            {(selectedClient.history || []).map((h, i) => (
-                                <div key={i} className="flex justify-between bg-[#0f172a] p-4 rounded-2xl text-[10px] border border-slate-800">
-                                    <span className="text-slate-400">{h.date} - {h.type} ({h.method})</span>
-                                    <div className="flex gap-4">
-                                        <span className={h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}>${h.amount}</span>
-                                        <button onClick={() => {
-                                            const newH = selectedClient.history.filter((_, idx) => idx !== i);
-                                            db.ref(`clients/${selectedClient.id}/history`).set(newH);
-                                            setSelectedClient({...selectedClient, history: newH});
-                                        }} className="text-red-900 font-black">DEL</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
+    {/* --- 1. ADD NEW PORTFOLIO VIEW --- */}
+    {isAdmin && view === 'add' && (
+        <div className="max-w-xl mx-auto bg-[#1e293b] p-10 rounded-[40px] border border-slate-700">
+            <h2 className="text-white font-black uppercase italic mb-8">Add New Portfolio</h2>
+            <form onSubmit={async (e) => {
+                e.preventDefault();
+                const d = Object.fromEntries(new FormData(e.target).entries());
+                const newClient = {
+                    ...d,
+                    interestAmount: d.principal, // Initially balance = principal
+                    history: [{
+                        date: new Date().toLocaleDateString(),
+                        type: 'Initial Loan',
+                        amount: d.principal,
+                        method: 'System'
+                    }]
+                };
+                await db.ref('clients').push(newClient);
+                alert("Portfolio Created!");
+                setView('home');
+            }} className="grid grid-cols-2 gap-4">
+                <input name="name" placeholder="Client Name" className="col-span-2 p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
+                <input name="email" type="email" placeholder="Client Email" className="col-span-2 p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
+                <input name="principal" type="number" placeholder="Principal Amount ($)" className="p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
+                <input name="interestRate" type="number" placeholder="Interest Rate (%)" className="p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
+                <input name="dueDate" type="date" className="p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
+                <input name="employerPhone" placeholder="Employer Phone" className="p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" />
+                <button className="col-span-2 bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-4">Create Portfolio</button>
+            </form>
         </div>
-    );
-};
+    )}
 
-// --- RENDER ---
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+    {/* --- 2. TRANSACTION MODAL (Record Pay / New Loan / Top Up) --- */}
+    {payingClient && (
+        <div className="fixed inset-0 z-[1001] bg-black/90 flex items-center justify-center p-6 backdrop-blur-md">
+            <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700">
+                <h2 className="text-white font-black uppercase italic mb-2 text-center">Transaction</h2>
+                <p className="text-slate-500 text-[10px] text-center mb-6 uppercase">Client: {payingClient.name}</p>
+                
+                <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    const d = Object.fromEntries(new FormData(e.target).entries());
+                    const amount = parseFloat(d.amount);
+                    const type = d.type; // "Payment", "New Loan", or "Top Up"
+                    
+                    let newBalance = parseFloat(payingClient.interestAmount);
+                    
+                    // Logic for math
+                    if (type === 'Payment') {
+                        newBalance -= amount;
+                    } else {
+                        newBalance += amount;
+                    }
+
+                    const newHistoryEntry = {
+                        date: new Date().toLocaleDateString(),
+                        amount: amount,
+                        type: type,
+                        method: d.method || 'Cash'
+                    };
+
+                    const updatedHistory = [...(payingClient.history || []), newHistoryEntry];
+
+                    await db.ref(`clients/${payingClient.id}`).update({
+                        interestAmount: newBalance,
+                        history: updatedHistory
+                    });
+
+                    alert(`${type} Recorded!`);
+                    setPayingClient(null);
+                }} className="space-y-4">
+                    <div className="flex gap-2">
+                        <select name="type" className="flex-1 p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800 text-xs font-bold">
+                            <option value="Payment">Record Pay</option>
+                            <option value="New Loan">New Loan</option>
+                            <option value="Top Up">Top Up</option>
+                        </select>
+                        <select name="method" className="flex-1 p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800 text-xs font-bold">
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Cheque">Cheque</option>
+                        </select>
+                    </div>
+                    
+                    <input name="amount" type="number" step="0.01" placeholder="Amount ($)" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800 text-xl font-black" required />
+                    
+                    <div className="flex gap-3 pt-4">
+                        <button type="button" onClick={() => setPayingClient(null)} className="flex-1 bg-slate-800 text-slate-400 py-4 rounded-xl font-black uppercase text-[10px]">Cancel</button>
+                        <button type="submit" className="flex-1 bg-green-600 text-white py-4 rounded-xl font-black uppercase text-[10px]">Post Transaction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )}
+
+// ... (Rest of the render logic remains the same) ...
