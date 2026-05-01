@@ -16,101 +16,225 @@
 
     <script type="text/babel">
         // 1. CONFIG (Paste your real keys here!)
-// ... (Keep the previous Firebase Config, Imports, and App State) ...
+const firebaseConfig = {
+    apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE",
+    authDomain: "net-ten-accounting.firebaseapp.com",
+    databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
+    projectId: "net-ten-accounting",
+    storageBucket: "net-ten-accounting.appspot.com",
+    messagingSenderId: "1095937995425",
+    appId: "1:1095937995425:web:9d2089d7044a007e6336e0"
+};
 
-    {/* --- 1. ADD NEW PORTFOLIO VIEW --- */}
-    {isAdmin && view === 'add' && (
-        <div className="max-w-xl mx-auto bg-[#1e293b] p-10 rounded-[40px] border border-slate-700">
-            <h2 className="text-white font-black uppercase italic mb-8">Add New Portfolio</h2>
-            <form onSubmit={async (e) => {
-                e.preventDefault();
-                const d = Object.fromEntries(new FormData(e.target).entries());
-                const newClient = {
-                    ...d,
-                    interestAmount: d.principal, // Initially balance = principal
-                    history: [{
-                        date: new Date().toLocaleDateString(),
-                        type: 'Initial Loan',
-                        amount: d.principal,
-                        method: 'System'
-                    }]
-                };
-                await db.ref('clients').push(newClient);
-                alert("Portfolio Created!");
-                setView('home');
-            }} className="grid grid-cols-2 gap-4">
-                <input name="name" placeholder="Client Name" className="col-span-2 p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                <input name="email" type="email" placeholder="Client Email" className="col-span-2 p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                <input name="principal" type="number" placeholder="Principal Amount ($)" className="p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                <input name="interestRate" type="number" placeholder="Interest Rate (%)" className="p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                <input name="dueDate" type="date" className="p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" required />
-                <input name="employerPhone" placeholder="Employer Phone" className="p-4 bg-[#0f172a] rounded-2xl text-white border border-slate-800" />
-                <button className="col-span-2 bg-blue-600 text-white font-black py-5 rounded-2xl uppercase mt-4">Create Portfolio</button>
-            </form>
-        </div>
-    )}
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+const ADMIN_EMAIL = "winstonhmcdonald@gmail.com";
 
-    {/* --- 2. TRANSACTION MODAL (Record Pay / New Loan / Top Up) --- */}
-    {payingClient && (
-        <div className="fixed inset-0 z-[1001] bg-black/90 flex items-center justify-center p-6 backdrop-blur-md">
-            <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700">
-                <h2 className="text-white font-black uppercase italic mb-2 text-center">Transaction</h2>
-                <p className="text-slate-500 text-[10px] text-center mb-6 uppercase">Client: {payingClient.name}</p>
+const App = () => {
+    const [user, setUser] = React.useState(null);
+    const [userData, setUserData] = React.useState(null);
+    const [view, setView] = React.useState('home'); 
+    const [clients, setClients] = React.useState([]);
+    const [requests, setRequests] = React.useState([]);
+    const [pendingUsers, setPendingUsers] = React.useState([]);
+    const [payingClient, setPayingClient] = React.useState(null);
+    const [selectedClient, setSelectedClient] = React.useState(null);
+    const [searchTerm, setSearchTerm] = React.useState('');
+
+    React.useEffect(() => {
+        auth.onAuthStateChanged(u => {
+            setUser(u);
+            if (u) {
+                db.ref(`users/${u.uid}`).on('value', s => setUserData(s.val()));
+                if (u.email !== ADMIN_EMAIL) setView('client_home');
+            } else { setView('login'); }
+        });
+
+        db.ref('clients').on('value', s => {
+            const list = [];
+            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
+            setClients(list);
+        });
+        db.ref('requests').on('value', s => {
+            const list = [];
+            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
+            setRequests(list);
+        });
+        db.ref('pending_registrations').on('value', s => {
+            const list = [];
+            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
+            setPendingUsers(list);
+        });
+    }, []);
+
+    const isAdmin = user?.email === ADMIN_EMAIL;
+    const clientData = clients.find(c => c.email === user?.email);
+
+    if (!user) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white font-black uppercase italic tracking-widest">Net Ten Ltd. Loading...</div>;
+
+    return (
+        <div className="min-h-screen bg-[#0f172a] flex overflow-hidden font-sans">
+            {/* SIDEBAR */}
+            <aside className="w-64 bg-[#1e293b] border-r border-slate-800 flex flex-col shrink-0">
+                <div className="p-6 border-b border-slate-800 flex items-center gap-3">
+                    <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-8 h-8" />
+                    <h1 className="text-lg font-black text-white italic uppercase">Net Ten</h1>
+                </div>
+                <nav className="py-4 flex-1">
+                    {isAdmin ? (
+                        <>
+                            <button onClick={() => setView('home')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">📂 Portfolios</button>
+                            <button onClick={() => setView('add')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">➕ Add Portfolio</button>
+                            <button onClick={() => setView('inbox')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">🔔 Inbox ({requests.length + pendingUsers.length})</button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => setView('client_home')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">🏠 Account</button>
+                            <button onClick={() => setView('client_apply')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">➕ Apply</button>
+                            <button onClick={() => setView('client_pay')} className="w-full text-left px-6 py-4 text-[10px] font-black text-white uppercase hover:bg-slate-800 italic">💳 Pay</button>
+                        </>
+                    )}
+                </nav>
+                <button onClick={() => auth.signOut()} className="m-6 p-4 bg-red-900/10 text-red-500 rounded-2xl text-[10px] font-black uppercase">Sign Out</button>
+            </aside>
+
+            {/* MAIN CONTENT */}
+            <main className="flex-1 overflow-y-auto p-8">
                 
-                <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    const d = Object.fromEntries(new FormData(e.target).entries());
-                    const amount = parseFloat(d.amount);
-                    const type = d.type; // "Payment", "New Loan", or "Top Up"
-                    
-                    let newBalance = parseFloat(payingClient.interestAmount);
-                    
-                    // Logic for math
-                    if (type === 'Payment') {
-                        newBalance -= amount;
-                    } else {
-                        newBalance += amount;
-                    }
-
-                    const newHistoryEntry = {
-                        date: new Date().toLocaleDateString(),
-                        amount: amount,
-                        type: type,
-                        method: d.method || 'Cash'
-                    };
-
-                    const updatedHistory = [...(payingClient.history || []), newHistoryEntry];
-
-                    await db.ref(`clients/${payingClient.id}`).update({
-                        interestAmount: newBalance,
-                        history: updatedHistory
-                    });
-
-                    alert(`${type} Recorded!`);
-                    setPayingClient(null);
-                }} className="space-y-4">
-                    <div className="flex gap-2">
-                        <select name="type" className="flex-1 p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800 text-xs font-bold">
-                            <option value="Payment">Record Pay</option>
-                            <option value="New Loan">New Loan</option>
-                            <option value="Top Up">Top Up</option>
-                        </select>
-                        <select name="method" className="flex-1 p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800 text-xs font-bold">
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Cheque">Cheque</option>
-                        </select>
+                {/* ADMIN: PORTFOLIO LIST */}
+                {isAdmin && view === 'home' && (
+                    <div className="max-w-4xl mx-auto">
+                        <input type="text" placeholder="Search Client..." className="w-full p-4 bg-[#1e293b] rounded-2xl text-white text-xs mb-8 border border-slate-700" onChange={e => setSearchTerm(e.target.value)} />
+                        <div className="grid grid-cols-2 gap-4">
+                            {clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
+                                <div key={c.id} className="bg-[#1e293b] p-6 rounded-[32px] border border-slate-700">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-white font-black uppercase text-[10px] tracking-widest">{c.name}</h3>
+                                        <button onClick={() => { if(confirm("Delete Portfolio?")) db.ref(`clients/${c.id}`).remove(); }} className="text-red-500 text-[10px]">🗑️</button>
+                                    </div>
+                                    <p className="text-3xl font-black text-green-400 italic mb-4">${parseFloat(c.interestAmount).toFixed(2)}</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setPayingClient(c)} className="flex-1 bg-blue-600 text-white py-3 rounded-xl text-[8px] font-black uppercase">Record Transaction</button>
+                                        <button onClick={() => setSelectedClient(c)} className="bg-slate-700 text-white px-4 py-3 rounded-xl text-[8px] font-black uppercase font-black">Details</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    
-                    <input name="amount" type="number" step="0.01" placeholder="Amount ($)" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-800 text-xl font-black" required />
-                    
-                    <div className="flex gap-3 pt-4">
-                        <button type="button" onClick={() => setPayingClient(null)} className="flex-1 bg-slate-800 text-slate-400 py-4 rounded-xl font-black uppercase text-[10px]">Cancel</button>
-                        <button type="submit" className="flex-1 bg-green-600 text-white py-4 rounded-xl font-black uppercase text-[10px]">Post Transaction</button>
+                )}
+
+                {/* ADMIN: ADD PORTFOLIO */}
+                {isAdmin && view === 'add' && (
+                    <div className="max-w-xl mx-auto bg-[#1e293b] p-8 rounded-[40px] border border-slate-700">
+                        <h2 className="text-white font-black uppercase italic mb-6">New Portfolio</h2>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            const d = Object.fromEntries(new FormData(e.target).entries());
+                            const total = parseFloat(d.principal) + parseFloat(d.interest);
+                            const h = { amount: total, date: d.dateBorrowed, type: "Initial Loan", method: d.disbursement, timestamp: Date.now() };
+                            await db.ref('clients').push({ ...d, interestAmount: total, history: [h] });
+                            alert("Portfolio Created!");
+                            setView('home');
+                        }} className="grid grid-cols-2 gap-4">
+                            <input name="name" placeholder="Client Name" className="col-span-2 p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
+                            <input name="email" type="email" placeholder="Email" className="col-span-2 p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
+                            <input name="principal" type="number" placeholder="Principal ($)" className="p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
+                            <input name="interest" type="number" placeholder="Interest ($)" className="p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
+                            <input name="dateBorrowed" type="date" className="p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
+                            <input name="dueDate" type="date" className="p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
+                            <input name="employerPhone" placeholder="Employer Phone" className="col-span-2 p-4 bg-[#0f172a] rounded-xl text-white text-xs" required />
+                            <select name="disbursement" className="col-span-2 p-4 bg-[#0f172a] rounded-xl text-white text-xs">
+                                <option>Bank Transfer</option><option>Cash</option>
+                            </select>
+                            <button className="col-span-2 bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Save Portfolio</button>
+                        </form>
                     </div>
-                </form>
-            </div>
+                )}
+
+                {/* CLIENT: ACCOUNT HOME */}
+                {!isAdmin && view === 'client_home' && (
+                    <div className="max-w-xl mx-auto bg-[#1e293b] p-10 rounded-[40px] border border-slate-700 text-center">
+                        <p className="text-slate-500 font-black uppercase text-[10px] mb-2">Total Balance Due</p>
+                        <p className="text-6xl font-black text-green-400 italic mb-8">${parseFloat(clientData?.interestAmount || 0).toFixed(2)}</p>
+                        <div className="text-left space-y-3">
+                            <h3 className="text-white font-black text-[10px] uppercase border-b border-slate-800 pb-2">Activity</h3>
+                            {(clientData?.history || []).slice(-5).reverse().map((h, i) => (
+                                <div key={i} className="flex justify-between bg-[#0f172a] p-4 rounded-2xl text-[10px]">
+                                    <span className="text-slate-400 font-bold">{h.date} - {h.type}</span>
+                                    <span className={h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}>${h.amount}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </main>
+
+            {/* TRANSACTION MODAL (PAY/TOPUP/NEW LOAN) */}
+            {payingClient && (
+                <div className="fixed inset-0 z-[1001] bg-black/95 flex items-center justify-center p-6 backdrop-blur-md">
+                    <div className="bg-[#1e293b] w-full max-w-md rounded-[40px] p-8 border border-slate-700">
+                        <h2 className="text-white font-black uppercase text-center mb-6 italic">Record Transaction</h2>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            const d = Object.fromEntries(new FormData(e.target).entries());
+                            const amt = parseFloat(d.amount);
+                            let newBal = parseFloat(payingClient.interestAmount);
+                            if (d.type === 'Payment' || d.type === 'Full Payoff') newBal -= amt;
+                            else newBal += amt;
+                            const h = { amount: amt, date: d.date, method: d.method, type: d.type, timestamp: Date.now() };
+                            await db.ref(`clients/${payingClient.id}`).update({ interestAmount: Math.max(0, newBal), history: [...(payingClient.history || []), h] });
+                            setPayingClient(null);
+                        }} className="space-y-4">
+                            <select name="type" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs font-black uppercase">
+                                <option>Payment</option><option>Top Up</option><option>New Loan</option><option>Full Payoff</option>
+                            </select>
+                            <input name="amount" type="number" placeholder="Amount ($)" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xl font-black" required />
+                            <input name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs" />
+                            <select name="method" className="w-full p-4 bg-[#0f172a] rounded-xl text-white text-xs font-black uppercase">
+                                <option>Cash</option><option>Bank Transfer</option>
+                            </select>
+                            <button className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Post to History</button>
+                            <button type="button" onClick={() => setPayingClient(null)} className="w-full text-slate-500 font-black text-[10px] uppercase">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* DETAILS & HISTORY MODAL */}
+            {selectedClient && (
+                <div className="fixed inset-0 z-[1001] bg-black/95 flex items-center justify-center p-6">
+                    <div className="bg-[#1e293b] w-full max-w-2xl rounded-[40px] p-10 border border-slate-700 max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between mb-8">
+                            <h2 className="text-white font-black uppercase italic text-2xl">{selectedClient.name}</h2>
+                            <button onClick={() => setSelectedClient(null)} className="text-slate-500 font-black text-[10px]">CLOSE</button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mb-8">
+                            <div className="bg-[#0f172a] p-4 rounded-2xl"><label className="text-[8px] text-slate-500 uppercase font-black">Employer Phone</label><p className="text-white font-bold">{selectedClient.employerPhone}</p></div>
+                            <div className="bg-[#0f172a] p-4 rounded-2xl"><label className="text-[8px] text-slate-500 uppercase font-black">Initial Principal</label><p className="text-white font-bold">${selectedClient.principal}</p></div>
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-white font-black text-[10px] uppercase mb-4">Transaction History</h3>
+                            {(selectedClient.history || []).map((h, i) => (
+                                <div key={i} className="flex justify-between bg-[#0f172a] p-4 rounded-xl text-[10px]">
+                                    <span className="text-slate-400">{h.date} - {h.type} ({h.method})</span>
+                                    <div className="flex gap-4 items-center">
+                                        <span className="text-white font-black">${h.amount}</span>
+                                        <button onClick={() => {
+                                            const newH = selectedClient.history.filter((_, idx) => idx !== i);
+                                            db.ref(`clients/${selectedClient.id}/history`).set(newH);
+                                            setSelectedClient({...selectedClient, history: newH});
+                                        }} className="text-red-900 font-black">DEL</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-    )}
+    );
+};
 
-// ... (Rest of the render logic remains the same) ...
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
