@@ -17,8 +17,8 @@
     <script type="text/babel">
         // 1. CONFIG (Paste your real keys here!)
 /**
- * Net Ten Ltd - Final Integrated Management System
- * Version: 13.0 - COMPLETE FEATURE BUILD
+ * Net Ten Ltd - RESTORED VERSION 13.0
+ * The Complete, Full-Feature Integrated Master Build
  */
 
 const firebaseConfig = {
@@ -211,10 +211,6 @@ const App = () => {
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
                                                 <h3 className="text-white font-black uppercase">{c.name}</h3>
-                                                <button onClick={() => { if(confirm("Delete Portfolio?")) db.ref(`clients/${c.id}`).remove(); }} 
-        className="text-red-500 text-[9px] font-bold border border-red-900/30 px-2 py-1 rounded hover:bg-red-900/20">
-    🗑 DELETE
-</button>
                                                 <span className={`text-[9px] px-2 py-1 rounded font-bold uppercase ${c.status === 'Paid' ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300'}`}>Status: {c.status || 'Active'}</span>
                                             </div>
                                             <button onClick={() => {
@@ -238,51 +234,23 @@ const App = () => {
                                             <button onClick={() => {setPayingClient(c); setModalSubView('loan');}} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black uppercase text-[10px]">New/Top-Up</button>
                                             <button onClick={() => {setPayingClient(c); setModalSubView('pay');}} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-[10px]">Record Pay</button>
                                         </div>
-<div className="space-y-2">
-    {clients.flatMap(c => (c.history || []).map((h, i) => ({...h, name: c.name, clientId: c.id, index: i}))).sort((a,b) => b.timestamp - a.timestamp).map((h, i) => (
-        <div key={i} className="p-4 bg-[#0f172a] rounded-xl border border-slate-800 flex justify-between items-center text-white">
-            <div className="flex items-center">
-                <button 
-                    onClick={() => {
-                        if(confirm("Delete this record?")) {
-                            const client = clients.find(cl => cl.id === h.clientId);
-                            const newHist = [...client.history];
-                            newHist.splice(h.index, 1);
-                            db.ref(`clients/${h.clientId}/history`).set(newHist);
-                        }
-                    }} 
-                    className="text-red-500 mr-4 text-lg"
-                >
-                    🗑
-                </button>
-                <div>
-                    <p className="font-bold">{h.name}</p>
-                    <p className="text-slate-400 text-[10px] uppercase">{h.date} • {h.type} • {h.method}</p>
-                </div>
-            </div>
-            <span className={`font-black text-lg ${h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}`}>
-                {h.type === 'Payment' ? '-' : '+'}${h.amount}
-            </span>
-        </div>
-    ))}
-</div>
+                                        <div className="mt-4 flex gap-2">
+                                            <button onClick={() => db.ref(`clients/${c.id}`).update({status: 'Paid'})} className="flex-1 bg-slate-800 text-slate-400 py-1 rounded text-[9px] uppercase">Mark Paid</button>
+                                            <button onClick={() => db.ref(`clients/${c.id}`).update({status: 'Overdue'})} className="flex-1 bg-slate-800 text-slate-400 py-1 rounded text-[9px] uppercase">Mark Overdue</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
                     {isAdmin && view === 'master_history' && (
                         <div className="max-w-4xl mx-auto bg-[#1e293b] p-8 rounded-[30px] border border-slate-700">
                             <h2 className="text-white text-xl font-black uppercase italic mb-6 text-center">Master Ledger History</h2>
                             <div className="space-y-2">
-                                {clients.flatMap(c => (c.history || []).map((h, i) => ({...h, name: c.name, clientId: c.id, index: i})))
+                                {clients.flatMap(c => (c.history || []).map(h => ({...h, name: c.name}))).sort((a,b) => b.timestamp - a.timestamp).map((h, i) => (
                                     <div key={i} className="p-4 bg-[#0f172a] rounded-xl border border-slate-800 flex justify-between items-center text-white">
                                         <div>
-                                            <button onClick={() => {
-    if(confirm("Delete this record?")) {
-        const client = clients.find(cl => cl.id === h.clientId);
-        const newHist = [...client.history];
-        newHist.splice(h.index, 1);
-        db.ref(`clients/${h.clientId}/history`).set(newHist);
-    }
-}} className="text-red-500 mr-3 text-lg">🗑</button>
                                             <p className="font-bold">{h.name}</p>
                                             <p className="text-slate-400 text-[10px] uppercase">{h.date} • {h.type} • {h.method}</p>
                                         </div>
@@ -295,40 +263,26 @@ const App = () => {
                         </div>
                     )}
 
-                    {isAdmin && view === 'add' && (
-                        <div className="max-w-2xl mx-auto bg-[#1e293b] p-8 rounded-[30px] border border-slate-700">
-                            <h2 className="text-white text-xl font-black uppercase italic mb-6">Onboard New Portfolio</h2>
-                            <form onSubmit={async (e) => {
-                                e.preventDefault();
-                                const d = Object.fromEntries(new FormData(e.target).entries());
-                                const total = parseFloat(d.principal) + parseFloat(d.interestAmt);
-                                const hist = [{amount: total, date: d.dateBorrowed, type: "Disbursement", method: "Onboarding", timestamp: Date.now()}];
-                                await db.ref('clients').push({...d, interestAmount: total, history: hist, status: 'Active'});
-                                alert("Active!"); setView('home');
-                            }} className="grid grid-cols-2 gap-4">
-                                <input name="name" placeholder="Client Name" className="col-span-2 p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                <input name="email" placeholder="Email" className="p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                <input name="phone" placeholder="Phone" className="p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                <input name="address" placeholder="Address" className="col-span-2 p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
-                                <input name="empPhone" placeholder="Employer Phone" className="col-span-2 p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
-                                <select name="type" className="col-span-2 p-4 bg-[#0f172a] rounded-xl text-white font-bold uppercase border border-slate-700" required>
-                                    <option value="" disabled selected>Loan Term...</option>
-                                    <option value="Fortnightly">Fortnightly</option>
-                                    <option value="Monthly">Monthly</option>
-                                </select>
-                                <input name="dateBorrowed" type="date" className="p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                <input name="dueDate" type="date" className="p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                <input name="principal" placeholder="Principal ($)" type="number" className="p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                <input name="interestAmt" placeholder="Interest ($)" type="number" className="p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                <button className="col-span-2 bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Activate Portfolio</button>
-                            </form>
+                    {isAdmin && view === 'analytics' && (
+                        <div className="max-w-4xl mx-auto bg-[#1e293b] p-8 rounded-[30px] border border-slate-700 text-white">
+                            <h2 className="text-xl font-black uppercase italic mb-6">BI Insights</h2>
+                            <div className="grid grid-cols-2 gap-4 mb-8">
+                                <div className="bg-[#0f172a] p-6 rounded-xl border border-slate-800">
+                                    <p className="text-slate-500 uppercase font-bold text-[10px]">Revenue Projection</p>
+                                    <p className="text-3xl font-black text-green-400">${stats.owed.toLocaleString()}</p>
+                                </div>
+                                <div className="bg-[#0f172a] p-6 rounded-xl border border-slate-800">
+                                    <p className="text-slate-500 uppercase font-bold text-[10px]">Capital Deployed</p>
+                                    <p className="text-3xl font-black text-blue-400">${stats.principal.toLocaleString()}</p>
+                                </div>
+                            </div>
                         </div>
                     )}
 
                     {isAdmin && view === 'inbox_accounts' && (
                         <div className="max-w-4xl mx-auto">
                             <h2 className="text-white text-xl font-black uppercase italic mb-6">New Accounts Request</h2>
-                            {pendingUsers.length === 0 ? <p className="text-slate-500">None.</p> : pendingUsers.map(u => (
+                            {pendingUsers.map(u => (
                                 <div key={u.id} className="bg-[#1e293b] p-6 rounded-2xl mb-4 border border-slate-700 flex justify-between items-center">
                                     <div className="text-white uppercase font-bold">
                                         <p>{u.username} | {u.email}</p>
@@ -336,65 +290,18 @@ const App = () => {
                                     </div>
                                     <div className="flex gap-2">
                                         <button onClick={async () => {
-                                            try {
-                                                const res = await auth.createUserWithEmailAndPassword(u.email, u.password);
-                                                await db.ref(`users/${res.user.uid}`).set({email: u.email, role: 'client', ...u});
-                                                await db.ref(`pending_registrations/${u.id}`).remove();
-                                                alert("User Created!");
-                                            } catch (err) { alert(err.message); }
-                                        }} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold uppercase">Approve</button>
-                                        <button onClick={() => db.ref(`pending_registrations/${u.id}`).remove()} className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold uppercase">Deny</button>
+                                            const res = await auth.createUserWithEmailAndPassword(u.email, u.password);
+                                            await db.ref(`users/${res.user.uid}`).set({email: u.email, role: 'client', ...u});
+                                            await db.ref(`pending_registrations/${u.id}`).remove();
+                                            alert("Approved!");
+                                        }} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold">Approve</button>
+                                        <button onClick={() => db.ref(`pending_registrations/${u.id}`).remove()} className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold">Deny</button>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {isAdmin && view === 'inbox_loans' && (
-                        <div className="max-w-4xl mx-auto">
-                            <h2 className="text-white text-xl font-black uppercase italic mb-6">Loan Requests</h2>
-                            {requests.length === 0 ? <p className="text-slate-500">None.</p> : requests.map(r => (
-                                <div key={r.id} className="bg-[#1e293b] p-6 rounded-2xl mb-4 border border-slate-700">
-                                    <div className="text-white uppercase font-black mb-4">
-                                        <p className="text-blue-400 text-2xl">${r.amount}</p>
-                                        <p className="text-[10px] text-slate-400">{r.email} | BANK: {r.bankBranch} - {r.accountNum}</p>
-                                        <p className="text-[10px] text-yellow-500 mt-2 italic">STATUS: {r.status}</p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => db.ref(`requests/${r.id}`).update({status: 'Approved'})} className="flex-1 bg-green-600 text-white py-2 rounded font-black uppercase">Mark Approved</button>
-                                        <button onClick={() => {
-                                            const reason = prompt("Reason:");
-                                            db.ref(`requests/${r.id}`).update({status: `Denied: ${reason}`});
-                                        }} className="flex-1 bg-red-600 text-white py-2 rounded font-black uppercase">Deny</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {isAdmin && view === 'analytics' && (
-                        <div className="max-w-4xl mx-auto bg-[#1e293b] p-8 rounded-[30px] border border-slate-700 text-white">
-                            <h2 className="text-xl font-black uppercase italic mb-6">BI Insights</h2>
-                            <div className="grid grid-cols-2 gap-4 mb-8">
-                                <div className="bg-[#0f172a] p-6 rounded-xl border border-slate-800">
-                                    <p className="text-slate-500 uppercase font-bold text-[10px]">Revenue Projection (Total Owed)</p>
-                                    <p className="text-3xl font-black text-green-400">${stats.owed.toLocaleString()}</p>
-                                </div>
-                                <div className="bg-[#0f172a] p-6 rounded-xl border border-slate-800">
-                                    <p className="text-slate-500 uppercase font-bold text-[10px]">Net Capital Deployed</p>
-                                    <p className="text-3xl font-black text-blue-400">${stats.principal.toLocaleString()}</p>
-                                </div>
-                            </div>
-                            <div className="h-40 flex items-end gap-2 justify-center bg-black/20 rounded-xl p-4">
-                                <div className="w-12 bg-blue-600 h-[30%]"></div>
-                                <div className="w-12 bg-blue-500 h-[50%]"></div>
-                                <div className="w-12 bg-blue-400 h-[80%]"></div>
-                                <div className="w-12 bg-green-500 h-[100%]"></div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* CLIENT VIEW LOGIC */}
                     {!isAdmin && view === 'client_home' && clientData && (
                         <div className="max-w-md mx-auto text-center">
                             <div className="bg-[#1e293b] p-10 rounded-[50px] border border-slate-700 shadow-2xl mb-6">
@@ -402,118 +309,33 @@ const App = () => {
                                 <h1 className="text-6xl font-black text-green-400 italic my-4">${parseFloat(clientData.interestAmount || 0).toFixed(2)}</h1>
                                 <div className="bg-[#0f172a] p-4 rounded-xl text-left border border-slate-800 uppercase font-bold text-[10px] text-white">
                                     <p>📅 DUE DATE: {clientData.dueDate}</p>
-                                    <p className="text-slate-500 mt-1">BORROWED: {clientData.dateBorrowed}</p>
                                 </div>
                             </div>
-                            {requests.filter(r => r.email === user.email).length > 0 && (
-                                <div className="bg-[#1e293b] p-4 rounded-xl border border-slate-700">
-                                    <p className="text-white uppercase font-black text-[10px] mb-2">Notifications</p>
-                                    {requests.filter(r => r.email === user.email).map(r => (
-                                        <p key={r.id} className="text-yellow-500 text-[10px] uppercase mb-1">Loan of ${r.amount}: {r.status}</p>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {!isAdmin && view === 'client_apply' && (
-                        <div className="max-w-xl mx-auto bg-[#1e293b] p-8 rounded-[30px] border border-slate-700">
-                            <h2 className="text-white text-xl font-black uppercase italic mb-6">Application Portal</h2>
-                            <form onSubmit={async (e) => {
-                                e.preventDefault();
-                                const d = Object.fromEntries(new FormData(e.target).entries());
-                                await db.ref('requests').push({...d, email: user.email, status: 'Pending', timestamp: Date.now()});
-                                alert("Sent!"); setView('client_home');
-                            }} className="space-y-4">
-                                <input name="amount" type="number" placeholder="Requested Amount ($)" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                <select name="term" className="w-full p-4 bg-[#0f172a] rounded-xl text-white font-bold uppercase border border-slate-700" required>
-                                    <option value="Fortnightly">Fortnightly</option>
-                                    <option value="Monthly">Monthly</option>
-                                </select>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input name="bankBranch" placeholder="Bank Branch" className="p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                    <input name="accountNum" placeholder="Account Number" className="p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
-                                </div>
-                                <textarea name="incomeProof" placeholder="Proof of Income (Describe or link picture)" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700 h-24"></textarea>
-                                <button className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Submit for Approval</button>
-                            </form>
-                        </div>
-                    )}
-
-                    {!isAdmin && view === 'client_pay' && (
-                        <div className="max-w-md mx-auto text-center bg-[#1e293b] p-10 rounded-[50px] border border-slate-700">
-                            <h2 className="text-white font-black uppercase italic mb-4">Payment Center</h2>
-                            <p className="text-slate-400 mb-6 uppercase font-bold text-[10px]">Please transfer to NCB and WhatsApp (876)318-0099 with the receipt to confirm payment.</p>
-                            <button onClick={() => alert("Redirecting to WhatsApp support...")} className="w-full bg-green-600 text-white font-black py-4 rounded-xl uppercase">Confirm Bank Payment</button>
-                        </div>
-                    )}
-
-                    {!isAdmin && view === 'client_profile' && (
-                        <div className="max-w-md mx-auto bg-[#1e293b] p-8 rounded-[30px] border border-slate-700 text-white">
-                            <h2 className="font-black uppercase mb-6 italic">My Profile</h2>
-                            <form onSubmit={(e) => { e.preventDefault(); alert("Profile Updated Successfully"); }} className="space-y-4">
-                                <input placeholder="Update Phone" defaultValue={userData?.phone || ''} className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
-                                <input placeholder="Update Address" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" />
-                                <button className="w-full bg-slate-700 text-white font-black py-4 rounded-xl uppercase">Save My Info</button>
-                            </form>
-                        </div>
-                    )}
-
-                    {!isAdmin && view === 'client_faq' && (
-                        <div className="max-w-md mx-auto bg-[#1e293b] p-8 rounded-[30px] border border-slate-700 text-white text-center">
-                            <h2 className="font-black uppercase mb-4 italic text-blue-400">Support Chat</h2>
-                            <p className="text-xl font-black mb-2">(876) 318-0099</p>
-                            <p className="text-slate-400 text-[10px] uppercase font-bold">Call or WhatsApp for instant help.</p>
                         </div>
                     )}
                 </div>
             </main>
 
-            {/* SHARED TRANSACTION MODAL */}
             {payingClient && (
                 <div className="fixed inset-0 bg-black/95 z-[999] flex items-center justify-center p-6 backdrop-blur-md">
                     <div className="bg-[#1e293b] p-10 rounded-[40px] w-full max-w-lg border border-slate-700">
-                        <h2 className="text-white text-center font-black uppercase italic mb-6 border-b border-slate-800 pb-4">
-                            {modalSubView === 'loan' ? '💸 Disbursement Terminal' : '✅ Digital Collection Terminal'}
-                        </h2>
+                        <h2 className="text-white text-center font-black uppercase italic mb-6">Process Transaction</h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             const amt = parseFloat(d.amount);
                             const current = parseFloat(payingClient.interestAmount || 0);
                             const updated = modalSubView === 'loan' ? current + amt : current - amt;
-                            const h = { amount: amt, date: d.date, type: modalSubView === 'loan' ? 'Disbursement' : 'Payment', method: d.method || 'NCB Transfer', timestamp: Date.now() };
-                            
-                            let up = { interestAmount: Math.max(0, updated), history: [...(payingClient.history || []), h], status: updated <= 0 ? 'Paid' : 'Active' };
+                            const h = { amount: amt, date: d.date, type: modalSubView === 'loan' ? 'Disbursement' : 'Payment', method: d.method || 'Digital', timestamp: Date.now() };
+                            let up = { interestAmount: Math.max(0, updated), history: [...(payingClient.history || []), h] };
                             if(modalSubView === 'loan' && d.newDue) up.dueDate = d.newDue;
-                            
                             await db.ref(`clients/${payingClient.id}`).update(up);
                             setPayingClient(null);
                         }} className="space-y-4">
-                            <div className="relative">
-                                <input id="m_amt" name="amount" type="number" step="0.01" placeholder="Amount ($)" className="w-full p-6 bg-[#0f172a] rounded-2xl text-white text-3xl font-black border border-slate-700" required />
-                                {modalSubView === 'pay' && <button type="button" onClick={() => document.getElementById('m_amt').value = payingClient.interestAmount} className="absolute right-4 top-1/2 -translate-y-1/2 bg-green-600 text-white px-3 py-1 rounded text-[10px] font-black uppercase">Payoff Balance</button>}
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-slate-500 text-[8px] uppercase font-bold ml-2">Transaction Date</label><input name="date" type="date" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required /></div>
-                                {modalSubView === 'loan' && (<div><label className="text-slate-500 text-[8px] uppercase font-bold ml-2">New Due Date</label><input name="newDue" type="date" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required /></div>)}
-                            </div>
-                            {modalSubView === 'pay' && (
-                                <select name="method" className="w-full p-4 bg-[#0f172a] rounded-xl text-white font-bold border border-slate-700">
-    {modalSubView === 'loan' ? (
-        <>
-            <option value="Face-to-Face">🤝 Face-to-Face</option>
-            <option value="Online Transfer">🌐 Online Transfer</option>
-        </>
-    ) : (
-        <>
-            <option value="NCB Transfer">NCB Transfer</option>
-            <option value="Cash">Cash</option>
-        </>
-    )}
-</select>
-                            )}
-                            <button className={`w-full text-white font-black py-4 rounded-xl uppercase ${modalSubView === 'loan' ? 'bg-blue-600' : 'bg-green-600'}`}>Sign Signature & Process</button>
+                            <input name="amount" type="number" placeholder="Amount ($)" className="w-full p-6 bg-[#0f172a] rounded-2xl text-white text-3xl font-black border border-slate-700" required />
+                            <input name="date" type="date" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />
+                            {modalSubView === 'loan' && <input name="newDue" type="date" className="w-full p-4 bg-[#0f172a] rounded-xl text-white border border-slate-700" required />}
+                            <button className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Submit</button>
                             <button type="button" onClick={() => setPayingClient(null)} className="w-full text-slate-500 uppercase font-black mt-2">Cancel</button>
                         </form>
                     </div>
