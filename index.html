@@ -238,14 +238,29 @@ const App = () => {
                                             <button onClick={() => {setPayingClient(c); setModalSubView('loan');}} className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black uppercase text-[10px]">New/Top-Up</button>
                                             <button onClick={() => {setPayingClient(c); setModalSubView('pay');}} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-black uppercase text-[10px]">Record Pay</button>
                                         </div>
-                                        <div className="mt-4 flex gap-2">
-                                            <button onClick={() => db.ref(`clients/${c.id}`).update({status: 'Paid'})} className="flex-1 bg-slate-800 text-slate-400 py-1 rounded text-[9px] uppercase">Mark Paid</button>
-                                            <button onClick={() => db.ref(`clients/${c.id}`).update({status: 'Overdue'})} className="flex-1 bg-slate-800 text-slate-400 py-1 rounded text-[9px] uppercase">Mark Overdue</button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                                      <div className="space-y-2">
+    {clients.flatMap(c => (c.history || []).map((h, i) => ({...h, name: c.name, clientId: c.id, index: i}))).sort((a,b) => b.timestamp - a.timestamp).map((h, i) => (
+        <div key={i} className="p-4 bg-[#0f172a] rounded-xl border border-slate-800 flex justify-between items-center text-white">
+            <div className="flex items-center">
+                <button onClick={() => {
+                    if(confirm("Delete this record?")) {
+                        const client = clients.find(cl => cl.id === h.clientId);
+                        const newHist = [...client.history];
+                        newHist.splice(h.index, 1);
+                        db.ref(`clients/${h.clientId}/history`).set(newHist);
+                    }
+                }} className="text-red-500 mr-4 text-lg">🗑</button>
+                <div>
+                    <p className="font-bold">{h.name}</p>
+                    <p className="text-slate-400 text-[10px] uppercase">{h.date} • {h.type} • {h.method}</p>
+                </div>
+            </div>
+            <span className={`font-black text-lg ${h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}`}>
+                {h.type === 'Payment' ? '-' : '+'}${h.amount}
+            </span>
+        </div>
+    ))}
+</div>
                     )}
 
                     {isAdmin && view === 'master_history' && (
