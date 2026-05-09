@@ -32,7 +32,7 @@ const db = firebase.database();
 const ADMIN_EMAIL = "nettenltd@gmail.com";
 
 const App = () => {
-    // --- APP STATES ---
+    // --- GLOBAL STATES ---
     const [user, setUser] = React.useState(null);
     const [userData, setUserData] = React.useState(null);
     const [view, setView] = React.useState('home'); 
@@ -44,17 +44,17 @@ const App = () => {
     const [requests, setRequests] = React.useState([]);
     const [pendingUsers, setPendingUsers] = React.useState([]);
     
-    // UI Interaction States
+    // Interaction States
     const [payingClient, setPayingClient] = React.useState(null);
     const [modalSubView, setModalSubView] = React.useState('pay'); 
     const [editingClient, setEditingClient] = React.useState(null); 
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [historySearchTerm, setHistorySearchTerm] = React.useState(''); // New in 16.0
+    const [historySearchTerm, setHistorySearchTerm] = React.useState('');
     const [startDate, setStartDate] = React.useState('');
     const [endDate, setEndDate] = React.useState('');
     const [selectedBank, setSelectedBank] = React.useState('');
 
-    // --- DATA SYNC ---
+    // --- REAL-TIME DATA RECOVERY ---
     React.useEffect(() => {
         const unsubscribeAuth = auth.onAuthStateChanged(u => {
             setUser(u);
@@ -65,21 +65,27 @@ const App = () => {
             } else { setView('login'); }
         });
 
+        // Safe Load Clients
         db.ref('clients').on('value', s => {
             const list = [];
-            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
+            const data = s.val();
+            if (data) Object.keys(data).forEach(k => list.push({id: k, ...data[k]}));
             setClients(list);
         });
 
+        // Safe Load Requests
         db.ref('requests').on('value', s => {
             const list = [];
-            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
+            const data = s.val();
+            if (data) Object.keys(data).forEach(k => list.push({id: k, ...data[k]}));
             setRequests(list);
         });
 
+        // Safe Load Registrations
         db.ref('pending_registrations').on('value', s => {
             const list = [];
-            if (s.val()) Object.keys(s.val()).forEach(k => list.push({id: k, ...s.val()[k]}));
+            const data = s.val();
+            if (data) Object.keys(data).forEach(k => list.push({id: k, ...data[k]}));
             setPendingUsers(list);
         });
 
@@ -88,25 +94,25 @@ const App = () => {
 
     const isAdmin = user?.email === ADMIN_EMAIL;
     const clientData = clients.find(c => c.email === user?.email);
-    const clientNotifications = requests.filter(r => r.email === user?.email) || [];
+    const clientNotifications = (requests || []).filter(r => r.email === user?.email);
 
-    // --- STATS & ANALYTICS ---
+    // --- ANALYTICS CALCULATOR (With Safety Guards) ---
     const stats = (() => {
         let totalOwed = 0; let totalPrincipal = 0; let collected = 0;
-        clients.forEach(c => {
+        (clients || []).forEach(c => {
             totalOwed += parseFloat(c.interestAmount || 0);
             totalPrincipal += parseFloat(c.principal || 0);
-            (c.history || []).forEach(h => { if (h.type === 'Payment') collected += parseFloat(h.amount); });
+            (c.history || []).forEach(h => { if (h.type === 'Payment') collected += parseFloat(h.amount || 0); });
         });
-        const overdue = clients.filter(c => c.status === 'Overdue');
+        const overdue = (clients || []).filter(c => c.status === 'Overdue');
         return { 
             owed: totalOwed, principal: totalPrincipal, profit: totalPrincipal > 0 ? ((collected / totalPrincipal) * 100).toFixed(1) : 0,
-            accounts: pendingUsers.length, loans: requests.filter(r => r.status === 'Pending').length,
+            accounts: (pendingUsers || []).length, loans: (requests || []).filter(r => r.status === 'Pending').length,
             outstandingCount: overdue.length, totalArrears: overdue.reduce((acc, curr) => acc + parseFloat(curr.interestAmount || 0), 0)
         };
     })();
 
-    // --- SIGNATURE DRAWING ---
+    // --- SIGNATURE DRAWING LOGIC ---
     const startDrawing = (e) => {
         const canvas = e.target; const ctx = canvas.getContext('2d'); const rect = canvas.getBoundingClientRect();
         const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
@@ -120,9 +126,9 @@ const App = () => {
         const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
         ctx.lineTo(x, y); ctx.stroke();
     };
-    const stopDrawing = (e) => { e.target.drawing = false; };
+    const stopDrawing = (e) => { if(e.target) e.target.drawing = false; };
 
-    // --- LOGIN / REGISTER ---
+    // --- AUTH VIEWS ---
     if (!user) {
         return (
             <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 text-[12px]">
@@ -132,27 +138,27 @@ const App = () => {
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
-                            try { await auth.signInWithEmailAndPassword(d.email, d.password); } catch(err) { alert("Access Denied."); }
+                            try { await auth.signInWithEmailAndPassword(d.email, d.password); } catch(err) { alert("Invalid Credentials."); }
                         }} className="space-y-4">
-                            <h2 className="font-black uppercase italic mb-4 text-blue-400">Secure Terminal</h2>
-                            <input name="email" placeholder="Email / Username" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required />
-                            <input name="password" type="password" placeholder="Password" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required />
-                            <button className="w-full bg-blue-600 font-black py-5 rounded-2xl uppercase shadow-lg hover:bg-blue-500">Authenticate</button>
-                            <button type="button" onClick={() => setIsRegistering(true)} className="text-slate-500 text-[10px] mt-4 block mx-auto uppercase underline">Register Access</button>
+                            <h2 className="font-black uppercase italic mb-4 text-blue-400 tracking-widest">Master Terminal</h2>
+                            <input name="email" placeholder="Email / Username" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 outline-none" required />
+                            <input name="password" type="password" placeholder="Password" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 outline-none" required />
+                            <button className="w-full bg-blue-600 font-black py-5 rounded-2xl uppercase shadow-lg">Authenticate</button>
+                            <button type="button" onClick={() => setIsRegistering(true)} className="text-slate-500 text-[10px] mt-4 block mx-auto uppercase underline">Create Account</button>
                         </form>
                     ) : (
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             await db.ref('pending_registrations').push({...d, timestamp: Date.now()});
-                            alert("Request Dispatched."); setIsRegistering(false);
+                            alert("Onboarding Request Sent."); setIsRegistering(false);
                         }} className="space-y-4 text-left">
                             <h2 className="font-black uppercase italic text-center mb-4 text-green-400">Registration</h2>
-                            <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Date of Birth</label><input name="dob" type="date" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700" required /></div>
-                            <input name="username" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700" required />
-                            <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700" required />
-                            <input name="email" type="email" placeholder="Email Address" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700" required />
-                            <input name="password" type="password" placeholder="Create Password" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700" required />
+                            <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Date of Birth</label><input name="dob" type="date" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required /></div>
+                            <input name="username" placeholder="Full Name" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
+                            <input name="phone" placeholder="Phone Number" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
+                            <input name="email" type="email" placeholder="Email Address" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
+                            <input name="password" type="password" placeholder="Password" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
                             <button className="w-full bg-green-600 font-black py-4 rounded-xl uppercase shadow-lg">Submit Request</button>
                             <button type="button" onClick={() => setIsRegistering(false)} className="text-slate-500 text-[10px] block mx-auto text-center mt-2 underline">Back</button>
                         </form>
@@ -164,7 +170,7 @@ const App = () => {
 
     return (
         <div className="min-h-screen bg-[#0f172a] flex overflow-hidden font-sans text-[12px]">
-            {/* --- SIDEBAR --- */}
+            {/* SIDEBAR */}
             <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} bg-[#1e293b] border-r border-slate-800 flex flex-col shrink-0 transition-all duration-300 overflow-hidden`}>
                 <div className="p-8 border-b border-slate-800 flex items-center gap-3 min-w-[250px]">
                     <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-10 h-10" />
@@ -173,18 +179,18 @@ const App = () => {
                 <nav className="py-6 flex-1 overflow-y-auto min-w-[250px]">
                     {isAdmin ? (
                         <>
-                            <button onClick={() => setView('home')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'home' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'}`}>📂 Portfolios</button>
-                            <button onClick={() => setView('outstanding')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'outstanding' ? 'text-red-400 bg-slate-800' : 'text-slate-400 hover:text-white'}`}>⚠️ Outstanding</button>
-                            <button onClick={() => setView('master_history')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'master_history' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'}`}>📜 History</button>
-                            <button onClick={() => setView('add')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'add' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'}`}>➕ Onboard</button>
-                            <button onClick={() => setView('inbox_accounts')} className={`w-full text-left px-8 py-4 font-black uppercase flex justify-between ${view === 'inbox_accounts' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>Accounts <span className="bg-green-600 text-white px-2 rounded-full">{stats.accounts}</span></button>
-                            <button onClick={() => setView('inbox_loans')} className={`w-full text-left px-8 py-4 font-black uppercase flex justify-between ${view === 'inbox_loans' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>Requests <span className="bg-blue-600 text-white px-2 rounded-full">{stats.loans}</span></button>
-                            <button onClick={() => setView('analytics')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'analytics' ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'}`}>📊 Analytics</button>
+                            <button onClick={() => setView('home')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'home' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>📂 Portfolios</button>
+                            <button onClick={() => setView('outstanding')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'outstanding' ? 'text-red-400 bg-slate-800' : 'text-slate-400'}`}>⚠️ Outstanding</button>
+                            <button onClick={() => setView('master_history')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'master_history' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>📜 History</button>
+                            <button onClick={() => setView('add')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'add' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>➕ Onboard</button>
+                            <button onClick={() => setView('inbox_accounts')} className="w-full text-left px-8 py-4 font-black uppercase flex justify-between">Accounts <span className="bg-green-600 text-white px-2 rounded-full">{stats.accounts}</span></button>
+                            <button onClick={() => setView('inbox_loans')} className="w-full text-left px-8 py-4 font-black uppercase flex justify-between">Requests <span className="bg-blue-600 text-white px-2 rounded-full">{stats.loans}</span></button>
+                            <button onClick={() => setView('analytics')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'analytics' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>📊 Analytics</button>
                         </>
                     ) : (
                         <>
                             <button onClick={() => setView('client_home')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'client_home' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>🏠 Dashboard</button>
-                            <button onClick={() => setView('client_notifications')} className={`w-full text-left px-8 py-4 font-black uppercase flex justify-between ${view === 'client_notifications' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>🔔 Notifications {clientNotifications.length > 0 && <span className="bg-blue-600 text-white px-2 rounded-full font-bold">!</span>}</button>
+                            <button onClick={() => setView('client_notifications')} className="w-full text-left px-8 py-4 font-black uppercase flex justify-between">🔔 Notifications {clientNotifications.length > 0 && <span className="bg-blue-600 text-white px-2 rounded-full font-bold">!</span>}</button>
                             <button onClick={() => setView('client_apply')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'client_apply' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>➕ New Loan</button>
                             <button onClick={() => setView('client_pay')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'client_pay' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>💳 Make Payment</button>
                             <button onClick={() => setView('client_profile')} className={`w-full text-left px-8 py-4 font-black uppercase italic ${view === 'client_profile' ? 'text-white bg-slate-800' : 'text-slate-400'}`}>👤 My Profile</button>
@@ -193,37 +199,34 @@ const App = () => {
                     )}
                 </nav>
                 <div className="p-6 border-t border-slate-800 min-w-[250px]">
-                    <button onClick={() => auth.signOut()} className="w-full py-4 bg-red-600 text-white rounded-xl font-black uppercase shadow-xl active:scale-95 transition-all">Sign Out</button>
+                    <button onClick={() => auth.signOut()} className="w-full py-4 bg-red-600 text-white rounded-xl font-black uppercase shadow-xl hover:bg-red-500">Sign Out</button>
                 </div>
             </aside>
 
-            {/* --- MAIN TERMINAL --- */}
+            {/* MAIN MAIN AREA */}
             <main className="flex-1 overflow-y-auto bg-[#0f172a]">
                 <header className="p-6 bg-[#1e293b] border-b border-slate-800 flex items-center justify-between sticky top-0 z-40">
                     <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white bg-slate-800 px-4 py-2 rounded-lg font-bold uppercase text-[10px]">Menu</button>
-                    <span className="text-white font-black uppercase italic tracking-widest text-[10px] opacity-60">Net Ten Master Terminal v16.0</span>
+                    <span className="text-white font-black uppercase italic tracking-widest text-[10px] opacity-60">Net Ten Master Terminal v16.1</span>
                 </header>
 
                 <div className="p-8">
-                    {/* ADMIN: PORTFOLIOS & OUTSTANDING */}
+                    {/* ADMIN: PORTFOLIOS / OUTSTANDING */}
                     {isAdmin && (view === 'home' || view === 'outstanding') && (
                         <div className="max-w-6xl mx-auto space-y-8">
-                            <div className={`bg-gradient-to-r ${view === 'outstanding' ? 'from-red-900' : 'from-blue-900'} to-slate-800 p-10 rounded-[40px] border border-white/10 shadow-2xl flex justify-between items-center`}>
-                                <div>
-                                    <h2 className="text-white/60 font-black uppercase text-xs mb-1 tracking-widest text-[9px]">{view === 'outstanding' ? 'Total Arrears Owed' : 'Total Outstanding Portfolio'}</h2>
-                                    <p className="text-white text-6xl font-black italic tracking-tighter">${(view === 'outstanding' ? stats.totalArrears : stats.owed).toLocaleString()}</p>
-                                </div>
-                                {view === 'outstanding' && <div className="bg-red-600 text-white px-6 py-2 rounded-full font-black text-xl italic shadow-lg">{stats.outstandingCount} LATE</div>}
+                            <div className={`bg-gradient-to-r ${view === 'outstanding' ? 'from-red-900' : 'from-blue-900'} to-slate-800 p-10 rounded-[40px] border border-white/10 shadow-2xl flex justify-between items-center text-white`}>
+                                <div><h2 className="opacity-60 font-black uppercase text-[9px] mb-1 tracking-widest">{view === 'outstanding' ? 'Arrears Balance' : 'Portfolio Balance'}</h2><p className="text-6xl font-black italic tracking-tighter">${(view === 'outstanding' ? stats.totalArrears : stats.owed).toLocaleString()}</p></div>
+                                {view === 'outstanding' && <div className="bg-red-600 text-white px-6 py-2 rounded-full font-black text-xl italic">{stats.outstandingCount} LATE</div>}
                             </div>
-                            <input type="text" placeholder="Search portfolios..." className="w-full p-5 bg-[#1e293b] rounded-2xl text-white border border-slate-700 outline-none focus:border-blue-600 transition-colors" onChange={e => setSearchTerm(e.target.value)} />
+                            <input type="text" placeholder="Filter by client name..." className="w-full p-5 bg-[#1e293b] rounded-2xl text-white border border-slate-700 outline-none" onChange={e => setSearchTerm(e.target.value)} />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {clients.filter(c => view === 'outstanding' ? c.status === 'Overdue' : true).filter(c => c.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
+                                {(clients || []).filter(c => view === 'outstanding' ? c.status === 'Overdue' : true).filter(c => c.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(c => (
                                     <div key={c.id} className="bg-[#1e293b] p-6 rounded-[30px] border border-slate-700 shadow-xl text-white flex flex-col hover:border-slate-500 transition-all">
                                         <div className="flex justify-between items-start mb-4">
-                                            <div><h3 className="text-white font-black uppercase text-lg tracking-tight">{c.name}</h3><p className={`text-[9px] font-black mt-1 uppercase ${c.status === 'Overdue' ? 'text-red-400' : 'text-slate-500'}`}>Due: {c.dueDate} | {c.status}</p></div>
+                                            <div><h3 className="text-white font-black uppercase text-lg">{c.name}</h3><p className={`text-[9px] font-black mt-1 uppercase ${c.status === 'Overdue' ? 'text-red-400' : 'text-slate-500'}`}>Due: {c.dueDate} | {c.status}</p></div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => setEditingClient(c)} className="bg-slate-800 text-blue-400 px-2 py-1 rounded text-[9px] font-bold uppercase">Details</button>
-                                                <button onClick={() => { if(confirm("DELETE PORTFOLIO?")) db.ref(`clients/${c.id}`).remove(); }} className="bg-red-900/20 text-red-400 border border-red-900 px-2 py-1 rounded text-[9px] font-bold uppercase">Delete</button>
+                                                <button onClick={() => { if(confirm("DELETE?")) db.ref(`clients/${c.id}`).remove(); }} className="bg-red-900/20 text-red-400 border border-red-900 px-2 py-1 rounded text-[9px] font-bold uppercase">Delete</button>
                                             </div>
                                         </div>
                                         <p className="text-green-400 text-5xl font-black italic mb-6 tracking-tighter">${parseFloat(c.interestAmount || 0).toFixed(2)}</p>
@@ -237,37 +240,32 @@ const App = () => {
                         </div>
                     )}
 
-                    {/* ADMIN: MASTER HISTORY (WITH SEARCH BAR) */}
+                    {/* ADMIN: HISTORY */}
                     {isAdmin && view === 'master_history' && (
                         <div className="max-w-4xl mx-auto bg-[#1e293b] p-10 rounded-[40px] border border-slate-700 text-white shadow-2xl">
-                            <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center text-blue-400">Transaction History</h2>
-                            
-                            {/* Collection Sum Calculator */}
+                            <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center text-blue-400">History Terminal</h2>
                             <div className="bg-[#0f172a] p-8 rounded-3xl mb-8 border border-green-900/30 flex justify-between items-center shadow-inner">
-                                <div><p className="text-[9px] text-green-500 font-black uppercase">Collection Calculator</p><p className="text-4xl font-black italic text-green-400">${clients.flatMap(c => (c.history || [])).filter(h => h.type === 'Payment').filter(h => (!startDate || h.date >= startDate) && (!endDate || h.date <= endDate)).reduce((acc, curr) => acc + parseFloat(curr.amount || 0), 0).toLocaleString()}</p></div>
+                                <div><p className="text-[9px] text-green-500 font-black uppercase">Filtered Collection Sum</p><p className="text-4xl font-black italic text-green-400">${(clients || []).flatMap(c => (c.history || [])).filter(h => h.type === 'Payment').filter(h => (!startDate || h.date >= startDate) && (!endDate || h.date <= endDate)).reduce((acc, curr) => acc + parseFloat(curr.amount || 0), 0).toLocaleString()}</p></div>
                             </div>
-
                             <div className="space-y-4 mb-8">
-                                {/* NEW IN 16.0: History Search Bar */}
-                                <input type="text" placeholder="Search history by name..." className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white outline-none focus:border-blue-500" onChange={e => setHistorySearchTerm(e.target.value)} />
+                                <input type="text" placeholder="Search by name..." className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white outline-none" onChange={e => setHistorySearchTerm(e.target.value)} />
                                 <div className="grid grid-cols-2 gap-4">
                                     <div><label className="text-[9px] uppercase font-bold text-slate-500 ml-2">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" /></div>
                                     <div><label className="text-[9px] uppercase font-bold text-slate-500 ml-2">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" /></div>
                                 </div>
                             </div>
-
                             <div className="space-y-3">
-                                {clients.flatMap(c => (c.history || []).map((h, i) => ({...h, name: c.name, clientId: c.id, index: i})))
-                                    .filter(h => h.name.toLowerCase().includes(historySearchTerm.toLowerCase()))
+                                {(clients || []).flatMap(c => (c.history || []).map((h, i) => ({...h, name: c.name, clientId: c.id, index: i})))
+                                    .filter(h => h.name?.toLowerCase().includes(historySearchTerm.toLowerCase()))
                                     .filter(h => (!startDate || h.date >= startDate) && (!endDate || h.date <= endDate))
                                     .sort((a,b) => b.timestamp - a.timestamp).map((h, i) => (
-                                    <div key={i} className="p-5 bg-[#0f172a] rounded-2xl border border-slate-800 flex justify-between items-center hover:border-slate-600 transition-all">
+                                    <div key={i} className="p-5 bg-[#0f172a] rounded-2xl border border-slate-800 flex justify-between items-center shadow-inner">
                                         <div className="flex items-center gap-4">
                                             <button onClick={() => { if(confirm("Delete record?")) { const cl = clients.find(cl => cl.id === h.clientId); const nh = [...cl.history]; nh.splice(h.index, 1); db.ref(`clients/${h.clientId}/history`).set(nh); } }} className="text-red-600 opacity-60">🗑</button>
-                                            <div><p className="font-bold text-lg uppercase">{h.name}</p><p className="text-slate-500 text-[10px] uppercase font-black">{h.date} • {h.type} • {h.method}</p></div>
+                                            <div><p className="font-bold text-lg uppercase">{h.name}</p><p className="text-slate-500 text-[10px] uppercase">{h.date} • {h.type} • {h.method}</p></div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            {h.signature && <div className="bg-white rounded p-1"><img src={h.signature} className="h-6" /></div>}
+                                            {h.signature && <div className="bg-white rounded p-1 shadow-md"><img src={h.signature} className="h-6" /></div>}
                                             <span className={`font-black text-xl italic ${h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}`}>{h.type === 'Payment' ? '-' : '+'}${parseFloat(h.amount).toFixed(2)}</span>
                                         </div>
                                     </div>
@@ -276,10 +274,10 @@ const App = () => {
                         </div>
                     )}
 
-                    {/* ADMIN: ONBOARD (NEW REFEREE FIELD) */}
+                    {/* ADMIN: ONBOARD */}
                     {isAdmin && view === 'add' && (
                         <div className="max-w-2xl mx-auto bg-[#1e293b] p-10 rounded-[50px] border border-slate-700 text-white shadow-2xl">
-                            <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center tracking-widest text-blue-400">Onboard Portfolio</h2>
+                            <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center tracking-widest">Onboard Portfolio</h2>
                             <form onSubmit={async (e) => {
                                 e.preventDefault();
                                 const d = Object.fromEntries(new FormData(e.target).entries());
@@ -287,39 +285,57 @@ const App = () => {
                                 await db.ref('clients').push({...d, history: hist, status: 'Active'});
                                 alert("Initialized."); setView('home');
                             }} className="grid grid-cols-2 gap-5">
-                                <input name="name" placeholder="Full Client Name" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required />
+                                <input name="name" placeholder="Client Name" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required />
                                 <input name="email" placeholder="Email Address" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required />
                                 <input name="phone" placeholder="Phone Number" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required />
                                 <input name="address" placeholder="Work Address" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required />
-                                <select name="type" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-800 font-black uppercase italic" required><option value="Weekly">Weekly</option><option value="Fortnightly">Fortnightly</option><option value="Monthly">Monthly</option></select>
-                                
-                                {/* NEW IN 16.0: Referee Field */}
-                                <input name="referee" placeholder="Referee (Optional)" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-800" />
-                                
+                                <select name="type" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-800 font-black uppercase italic" required><option value="Weekly">Weekly</option><option value="Fortnightly">Fortnightly</option><option value="Monthly">Monthly</option></select>
+                                <input name="referee" placeholder="Referee (Optional)" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-800" />
                                 <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Borrowed Date</label><input name="dateBorrowed" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required /></div>
                                 <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Due Date</label><input name="dueDate" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required /></div>
                                 <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Principal ($)</label><input name="principal" type="number" step="0.01" onChange={e => { const p = parseFloat(e.target.value) || 0; document.getElementById('onboard_total').value = (p * 1.25).toFixed(2); }} className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required /></div>
                                 <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Total Owed (25%)</label><input id="onboard_total" name="interestAmount" type="number" step="0.01" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-green-400 font-black" required /></div>
-                                
                                 <div className="col-span-2 flex gap-4 mt-6">
-                                    <button type="submit" className="flex-1 bg-blue-600 py-5 rounded-2xl font-black uppercase shadow-xl active:scale-95 italic">Initialize</button>
-                                    <button type="button" onClick={() => setView('home')} className="flex-1 bg-slate-800 text-slate-400 py-5 rounded-2xl font-black uppercase shadow-lg">Dismiss</button>
+                                    <button type="submit" className="flex-1 bg-blue-600 py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-blue-500">Initialize</button>
+                                    <button type="button" onClick={() => setView('home')} className="flex-1 bg-slate-800 text-slate-400 py-5 rounded-2xl font-black uppercase">Dismiss</button>
                                 </div>
                             </form>
                         </div>
                     )}
 
-                    {/* CLIENT DASHBOARD VIEWS (RESTORED) */}
+                    {/* CLIENT: DASHBOARD */}
                     {!isAdmin && view === 'client_home' && (
                         <div className="max-w-md mx-auto text-center text-white space-y-8">
                             <div className="bg-[#1e293b] p-16 rounded-[60px] border border-slate-700 shadow-2xl">
                                 <p className="text-slate-500 uppercase font-black text-[10px] tracking-[4px]">Balance Owed</p>
                                 <h1 className="text-8xl font-black text-green-400 italic my-6 tracking-tighter">${clientData ? parseFloat(clientData.interestAmount || 0).toFixed(2) : '0.00'}</h1>
                                 <div className="bg-[#0f172a] p-6 rounded-3xl text-left border border-slate-800 uppercase font-black text-[10px] space-y-2 shadow-inner">
-                                    <p className="text-red-400 tracking-widest">Next Due Date: {clientData?.dueDate || 'N/A'}</p>
+                                    <p className="text-red-400 tracking-widest underline decoration-dotted">Next Due Date: {clientData?.dueDate || 'N/A'}</p>
                                     <p className="text-slate-500 italic">Borrowed Date: {clientData?.dateBorrowed || 'N/A'}</p>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* CLIENT: APPLY */}
+                    {!isAdmin && view === 'client_apply' && (
+                        <div className="max-w-2xl mx-auto bg-[#1e293b] p-10 rounded-[50px] border border-slate-700 text-white shadow-2xl">
+                            <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center tracking-widest">Apply for Loan</h2>
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                const d = Object.fromEntries(new FormData(e.target).entries());
+                                const getBase64 = (f) => new Promise(resolve => { if(!f || f.size === 0) resolve(null); const r = new FileReader(); r.onloadend = () => resolve(r.result); r.readAsDataURL(f); });
+                                const docID = await getBase64(d.fileID);
+                                await db.ref('requests').push({...d, email: user.email, name: clientData?.name || userData?.username, status: 'Pending', timestamp: Date.now(), doc_ID: docID});
+                                alert("Dispatched."); setView('client_home');
+                            }} className="grid grid-cols-2 gap-5">
+                                <input name="amount" type="number" placeholder="Requested Amount ($)" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-white text-lg font-black" required />
+                                <select name="term" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-700 font-black uppercase italic" required><option value="Weekly">Weekly</option><option value="Fortnightly">Fortnightly</option><option value="Monthly">Monthly</option></select>
+                                <input name="id_proof" placeholder="Valid ID Info" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-700" required />
+                                <div className="col-span-2 space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2 italic">Capture Selfie/ID (Optional)</label><input name="fileID" type="file" accept="image/*" capture="camera" className="w-full text-xs" /></div>
+                                <textarea name="income_proof" placeholder="Brief income description..." className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-700 h-28" required></textarea>
+                                <button className="col-span-2 bg-blue-600 py-5 rounded-2xl font-black uppercase mt-6 shadow-xl hover:bg-blue-500 active:scale-95 transition-all">Submit Application</button>
+                            </form>
                         </div>
                     )}
                 </div>
@@ -327,41 +343,41 @@ const App = () => {
 
             {/* --- MODALS --- */}
             
-            {/* CORRECTION TERMINAL (RE-ADDED REFEREE) */}
+            {/* CORRECTION TERMINAL */}
             {isAdmin && editingClient && (
                 <div className="fixed inset-0 bg-black/95 z-[999] flex items-center justify-center p-6 backdrop-blur-md text-white">
                     <div className="bg-[#1e293b] p-12 rounded-[50px] w-full max-w-2xl border border-slate-700 shadow-2xl overflow-y-auto max-h-[90vh]">
-                        <h2 className="text-center font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-blue-400 tracking-widest">Correction: {editingClient.name}</h2>
+                        <h2 className="text-center font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-blue-400 tracking-widest underline underline-offset-8">Correction Hub: {editingClient.name}</h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const d = Object.fromEntries(new FormData(e.target).entries());
                             await db.ref(`clients/${editingClient.id}`).update(d);
-                            setEditingClient(null); alert("Synchronized.");
+                            setEditingClient(null); alert("Data Synchronized.");
                         }} className="grid grid-cols-2 gap-5 uppercase font-black text-[9px]">
-                            <div className="col-span-2 space-y-1"><label className="text-slate-500 ml-2">Name</label><input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" required /></div>
+                            <div className="col-span-2 space-y-1"><label className="text-slate-500 ml-2">Name Correct</label><input name="name" defaultValue={editingClient.name} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" required /></div>
                             <div className="space-y-1"><label className="text-slate-500 ml-2">Phone</label><input name="phone" defaultValue={editingClient.phone} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" required /></div>
                             <div className="space-y-1"><label className="text-slate-500 ml-2">Referee</label><input name="referee" defaultValue={editingClient.referee} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" /></div>
-                            <div className="col-span-2 space-y-1"><label className="text-slate-500 ml-2">Work Address</label><input name="address" defaultValue={editingClient.address} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" required /></div>
+                            <div className="col-span-2 space-y-1"><label className="text-slate-500 ml-2">Work Address Correct</label><input name="address" defaultValue={editingClient.address} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" required /></div>
                             <hr className="col-span-2 border-slate-800 my-4" />
-                            <div className="space-y-1"><label className="text-blue-400 ml-2">Borrowed Date</label><input name="dateBorrowed" type="date" defaultValue={editingClient.dateBorrowed} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" required /></div>
-                            <div className="space-y-1"><label className="text-red-400 ml-2">Next Due Date</label><input name="dueDate" type="date" defaultValue={editingClient.dueDate} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" required /></div>
-                            <div className="space-y-1"><label className="text-green-400 ml-2">Principal ($)</label><input name="principal" type="number" step="0.01" defaultValue={editingClient.principal} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" required /></div>
-                            <div className="space-y-1"><label className="text-green-400 ml-2 font-black uppercase">Total Owed ($)</label><input name="interestAmount" type="number" step="0.01" defaultValue={editingClient.interestAmount} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white font-black" required /></div>
+                            <div className="space-y-1"><label className="text-blue-400 ml-2 italic">Edit: Borrowed Date</label><input name="dateBorrowed" type="date" defaultValue={editingClient.dateBorrowed} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" required /></div>
+                            <div className="space-y-1"><label className="text-red-400 ml-2 italic">Edit: Next Due Date</label><input name="dueDate" type="date" defaultValue={editingClient.dueDate} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" required /></div>
+                            <div className="space-y-1"><label className="text-green-400 ml-2 italic">Edit: Principal Balance ($)</label><input name="principal" type="number" step="0.01" defaultValue={editingClient.principal} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" required /></div>
+                            <div className="space-y-1"><label className="text-green-400 ml-2 italic font-black uppercase">Edit: Total Owed ($)</label><input name="interestAmount" type="number" step="0.01" defaultValue={editingClient.interestAmount} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white font-black" required /></div>
                             <div className="col-span-2 flex gap-4 mt-8">
-                                <button type="submit" className="flex-1 bg-green-600 py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-green-500 transition-all tracking-widest italic">Apply Corrections</button>
-                                <button type="button" onClick={() => setEditingClient(null)} className="flex-1 text-slate-500 font-black py-5 uppercase underline">Dismiss</button>
+                                <button type="submit" className="flex-1 bg-green-600 py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-green-500 active:scale-95 transition-all tracking-widest italic">Apply Corrections</button>
+                                <button type="button" onClick={() => setEditingClient(null)} className="flex-1 text-slate-500 font-black py-5 uppercase underline decoration-dotted">Dismiss Terminal</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* TRANSACTION TERMINAL (WITH CASH HANDOVER SWITCH) */}
+            {/* TRANSACTION TERMINAL */}
             {payingClient && (
                 <div className="fixed inset-0 bg-black/95 z-[999] flex items-center justify-center p-6 backdrop-blur-md">
                     <div className="bg-[#1e293b] p-12 rounded-[50px] w-full max-w-lg border border-slate-700 text-white shadow-2xl">
                         <h2 className="text-center font-black uppercase italic mb-8 border-b border-slate-800 pb-4 tracking-tighter text-xl">
-                            {modalSubView === 'loan' ? '💸 Disbursement' : '✅ Collection'} ({payingClient.name})
+                            {modalSubView === 'loan' ? '💸 Disbursement Terminal' : '✅ Collection Terminal'} ({payingClient.name})
                         </h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
@@ -369,55 +385,49 @@ const App = () => {
                             const amt = modalSubView === 'loan' ? parseFloat(d.finalAmount) : parseFloat(d.amount);
                             const current = parseFloat(payingClient.interestAmount || 0);
                             const updated = modalSubView === 'loan' ? current + amt : current - amt;
-                            
                             const finalMethod = (d.method === "Online Transfer") ? `Online: ${d.bankSelection}${d.otherBank ? ' (' + d.otherBank + ')' : ''}` : d.method;
-                            
                             const h = { amount: amt, date: d.date, type: modalSubView === 'loan' ? 'Disbursement' : 'Payment', method: finalMethod, timestamp: Date.now() };
                             if(modalSubView === 'loan' && d.method === "Cash Handover") h.signature = document.getElementById('esignCanvas').toDataURL();
-                            
                             let up = { interestAmount: Math.max(0, updated), history: [...(payingClient.history || []), h] };
                             if(modalSubView === 'loan' && d.newDue) up.dueDate = d.newDue;
                             await db.ref(`clients/${payingClient.id}`).update(up);
-                            setPayingClient(null); setSelectedBank(''); alert("Terminal Dispatched.");
+                            setPayingClient(null); setSelectedBank(''); alert("Transaction Signed.");
                         }} className="space-y-5">
                             {modalSubView === 'loan' ? (
                                 <>
                                     <div className="space-y-1"><label className="text-[9px] text-slate-500 uppercase font-black ml-2">Top-Up Principal ($)</label><input name="topPrincipal" type="number" step="0.01" onChange={e => { const p = parseFloat(e.target.value) || 0; document.getElementById('topup_total').value = (p * 1.25).toFixed(2); }} className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-white font-bold" required /></div>
-                                    <div className="space-y-1"><label className="text-[9px] text-blue-400 uppercase font-black ml-2">Auto Addition (25%)</label><input id="topup_total" name="finalAmount" type="number" step="0.01" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-green-400 font-black text-2xl" required /></div>
+                                    <div className="space-y-1"><label className="text-[9px] text-blue-400 uppercase font-black ml-2 underline underline-offset-4">Auto Addition (25% Interest)</label><input id="topup_total" name="finalAmount" type="number" step="0.01" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-green-400 font-black text-2xl" required /></div>
                                 </>
                             ) : (
                                 <div className="relative"><label className="text-[9px] text-slate-500 uppercase font-black ml-2">Payment Amount ($)</label><input id="m_amt" name="amount" type="number" step="0.01" className="w-full p-7 bg-[#0f172a] rounded-3xl text-white text-5xl font-black border border-slate-700 text-right pr-32" required /><button type="button" onClick={() => document.getElementById('m_amt').value = payingClient.interestAmount} className="absolute left-6 top-[32px] bg-green-600 text-white px-4 py-1 rounded-full text-[9px] font-black uppercase italic shadow-lg">Full Payoff</button></div>
                             )}
                             
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1"><label className="text-[9px] text-slate-500 uppercase font-black ml-2">{modalSubView === 'loan' ? 'Borrowed' : 'Paid'}</label><input name="date" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required /></div>
-                                {modalSubView === 'loan' && (<div className="space-y-1"><label className="text-[9px] text-slate-500 uppercase font-black ml-2">New Due Date</label><input name="newDue" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required /></div>)}
+                                <div className="space-y-1"><label className="text-[9px] text-slate-500 uppercase font-black ml-2">{modalSubView === 'loan' ? 'Date' : 'Date Paid'}</label><input name="date" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required /></div>
+                                {modalSubView === 'loan' && (<div className="space-y-1"><label className="text-[9px] text-slate-500 uppercase font-black ml-2">Next Due Date</label><input name="newDue" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800" required /></div>)}
                             </div>
 
                             <div className="space-y-3">
-                                <select name="method" onChange={e => setSelectedBank(e.target.value === "Online Transfer" ? "NCB" : "")} className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 font-black uppercase outline-none">
-                                    {/* ✅ CHANGED: Cash Handover replaces Face-to-Face */}
-                                    {modalSubView === 'loan' ? (<><option value="Online Transfer">Online Transfer</option><option value="Cash Handover">Cash Handover</option></>) : (<><option value="Online Transfer">Online Transfer</option><option value="Cash">Cash Handover</option></>)}
+                                <select name="method" onChange={e => setSelectedBank(e.target.value === "Online Transfer" ? "NCB" : "")} className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 font-black uppercase outline-none text-white">
+                                    {modalSubView === 'loan' ? (<><option value="Online Transfer">Online Transfer</option><option value="Cash Handover">Cash Handover</option></>) : (<><option value="Online Transfer">Online Transfer</option><option value="Cash Handover">Cash Handover</option></>)}
                                 </select>
                                 {selectedBank && (
                                     <div className="space-y-3 p-4 bg-[#0f172a] rounded-2xl border border-blue-500/20 shadow-inner">
                                         <label className="text-[9px] text-blue-400 uppercase font-black">Destination Bank</label>
-                                        <select name="bankSelection" onChange={e => setSelectedBank(e.target.value)} className="w-full p-3 bg-slate-800 rounded-xl text-white font-bold uppercase">
-                                            <option value="NCB">NCB</option><option value="Scotia Bank">Scotia Bank</option><option value="Other">Other Bank</option>
-                                        </select>
+                                        <select name="bankSelection" onChange={e => setSelectedBank(e.target.value)} className="w-full p-3 bg-slate-800 rounded-xl text-white font-bold uppercase"><option value="NCB">NCB</option><option value="Scotia Bank">Scotia Bank</option><option value="Other">Other Bank</option></select>
                                         {selectedBank === "Other" && <input name="otherBank" placeholder="Enter Bank Name..." className="w-full p-4 bg-slate-900 border border-slate-700 rounded-xl text-white italic" required />}
                                     </div>
                                 )}
                             </div>
                             
-                            {(modalSubView === 'loan' && (document.getElementsByName('method')[0]?.value === "Cash Handover")) && (
+                            {(modalSubView === 'loan' && !selectedBank) && (
                                 <div className="p-4 bg-white rounded-3xl border border-slate-800 shadow-inner text-black">
-                                    <div className="flex justify-between items-center mb-2"><p className="text-[9px] text-slate-500 font-black uppercase">Client signature proof</p><button type="button" onClick={() => { const c = document.getElementById('esignCanvas'); c.getContext('2d').clearRect(0,0,c.width,c.height); }} className="text-red-500 text-[9px] font-black uppercase underline">Clear Pad</button></div>
+                                    <div className="flex justify-between items-center mb-2"><p className="text-[9px] text-slate-500 font-black uppercase">Proof Signature</p><button type="button" onClick={() => { const c = document.getElementById('esignCanvas'); c.getContext('2d').clearRect(0,0,c.width,c.height); }} className="text-red-500 text-[9px] font-black uppercase underline decoration-wavy">Clear</button></div>
                                     <canvas id="esignCanvas" width="350" height="100" className="rounded-xl cursor-crosshair h-24 w-full border border-slate-200" onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseOut={stopDrawing} onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}></canvas>
                                 </div>
                             )}
                             <button className={`w-full text-white font-black py-5 rounded-2xl uppercase shadow-2xl mt-4 italic tracking-[3px] active:scale-95 transition-all ${modalSubView === 'loan' ? 'bg-blue-600' : 'bg-green-600'}`}>Sign & Commit</button>
-                            <button type="button" onClick={() => { setPayingClient(null); setSelectedBank(''); }} className="w-full text-slate-500 uppercase font-black text-[9px] mt-2 underline italic">Close</button>
+                            <button type="button" onClick={() => { setPayingClient(null); setSelectedBank(''); }} className="w-full text-slate-500 uppercase font-black text-[9px] mt-2 underline decoration-double italic">Close</button>
                         </form>
                     </div>
                 </div>
