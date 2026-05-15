@@ -32,7 +32,7 @@ const db = firebase.database();
 const ADMIN_EMAIL = "nettenltd@gmail.com";
 
 const App = () => {
-    // --- APP STATES ---
+    // --- GLOBAL STATES ---
     const [user, setUser] = React.useState(null);
     const [userData, setUserData] = React.useState(null);
     const [view, setView] = React.useState('home'); 
@@ -93,9 +93,8 @@ const App = () => {
     const clientData = clients.find(c => c.email === user?.email);
     const clientNotifications = (requests || []).filter(r => r.email === user?.email);
 
-    // --- ✅ UPDATED IN 16.6: SMART ARREARS FILTER ---
+    // --- SMART ARREARS FILTER (Excludes $0.00 Balance) ---
     const isClientOutstanding = (c) => {
-        // Exclude anyone who owes 0.00 or less
         if (parseFloat(c.interestAmount || 0) <= 0) return false;
         if (c.status === 'Paid') return false;
         if (!c.dueDate || c.dueDate.toString().trim() === '') return true;
@@ -225,11 +224,11 @@ const App = () => {
                 </div>
             </aside>
 
-            {/* MAIN APP SPACE */}
+            {/* MAIN APP TERMINAL DISPLAY PANEL */}
             <main className="flex-1 overflow-y-auto bg-[#0f172a]">
                 <header className="p-6 bg-[#1e293b] border-b border-slate-800 flex items-center justify-between sticky top-0 z-40">
                     <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white bg-slate-800 px-4 py-2 rounded-lg font-bold uppercase text-[10px]">Menu</button>
-                    <span className="text-white font-black uppercase italic tracking-widest text-[10px] opacity-60">Net Ten Master Terminal v16.5</span>
+                    <span className="text-white font-black uppercase italic tracking-widest text-[10px] opacity-60">Net Ten Master Terminal v16.7</span>
                 </header>
 
                 <div className="p-8">
@@ -277,8 +276,8 @@ const App = () => {
                             <div className="space-y-4 mb-8">
                                 <input type="text" placeholder="Search history by client name..." className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" onChange={e => setHistorySearchTerm(e.target.value)} />
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-[9px] uppercase font-bold text-slate-500 ml-2">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" /></div>
-                                    <div><label className="text-[9px] uppercase font-bold text-slate-500 ml-2">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800" /></div>
+                                    <div><label className="text-[9px] uppercase font-bold text-slate-500 ml-2">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" /></div>
+                                    <div><label className="text-[9px] uppercase font-bold text-slate-500 ml-2">End Date</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-800 text-white" /></div>
                                 </div>
                             </div>
                             <div className="space-y-3">
@@ -317,27 +316,13 @@ const App = () => {
                                 <input name="referee" placeholder="Referee (Optional)" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-white" />
                                 <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Borrowed Date</label><input name="dateBorrowed" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-white" required /></div>
                                 <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Repayment Due Date</label><input name="dueDate" type="date" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-white" /></div>
-                                <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Principal ($)</label><input name="principal" type="number" step="0.01" onChange={e => { const p = parseFloat(e.target.value) || 0; document.getElementById('onboard_total').value = (p * 1.25).toFixed(2); }} className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-white" required /></div>
-                                <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Total Owed (25%)</label><input id="onboard_total" name="interestAmount" type="number" step="0.01" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-green-400 font-black" required /></div>
+                                <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Principal ($)</label><input name="principal" type="number" step="0.01" onChange={e => { const p = parseFloat(e.target.value) || 0; document.getElementById('onboard_total').value = (p * 1.25).toFixed(2); }} className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-white" required /></div>
+                                <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Total Owed (25%)</label><input id="onboard_total" name="interestAmount" type="number" step="0.01" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-green-400 font-black" required /></div>
                                 <div className="col-span-2 flex gap-4 mt-6">
                                     <button type="submit" className="flex-1 bg-blue-600 py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-blue-500">Initialize</button>
                                     <button type="button" onClick={() => setView('home')} className="flex-1 bg-slate-800 text-slate-400 py-5 rounded-2xl font-black uppercase shadow-lg hover:text-white">Dismiss</button>
                                 </div>
                             </form>
-                        </div>
-                    )}
-
-                    {/* CLIENT VIEW: HOME */}
-                    {!isAdmin && view === 'client_home' && (
-                        <div className="max-w-md mx-auto text-center text-white space-y-8">
-                            <div className="bg-[#1e293b] p-16 rounded-[60px] border border-slate-700 shadow-2xl">
-                                <p className="text-slate-500 uppercase font-black text-[10px] tracking-[4px]">Balance Owed</p>
-                                <h1 className="text-8xl font-black text-green-400 italic my-6 tracking-tighter">${clientData ? parseFloat(clientData.interestAmount || 0).toFixed(2) : '0.00'}</h1>
-                                <div className="bg-[#0f172a] p-6 rounded-3xl text-left border border-slate-800 uppercase font-black text-[10px] space-y-2 shadow-inner">
-                                    <p className="text-red-400 tracking-widest underline decoration-dotted">Next Due Date: {clientData?.dueDate || 'N/A'}</p>
-                                    <p className="text-slate-500 italic opacity-80">Borrowed Date: {clientData?.dateBorrowed || 'N/A'}</p>
-                                </div>
-                            </div>
                         </div>
                     )}
 
@@ -393,7 +378,20 @@ const App = () => {
                         </div>
                     )}
 
-                    {/* CLIENT NAVIGATION CONSOLE ELEMENTS */}
+                    {/* CLIENT DASHBOARD INTERFACES */}
+                    {!isAdmin && view === 'client_home' && (
+                        <div className="max-w-md mx-auto text-center text-white space-y-8">
+                            <div className="bg-[#1e293b] p-16 rounded-[60px] border border-slate-700 shadow-2xl">
+                                <p className="text-slate-500 uppercase font-black text-[10px] tracking-[4px]">Balance Owed</p>
+                                <h1 className="text-8xl font-black text-green-400 italic my-6 tracking-tighter">${clientData ? parseFloat(clientData.interestAmount || 0).toFixed(2) : '0.00'}</h1>
+                                <div className="bg-[#0f172a] p-6 rounded-3xl text-left border border-slate-800 uppercase font-black text-[10px] space-y-2 shadow-inner">
+                                    <p className="text-red-400 tracking-widest underline decoration-dotted">Next Due Date: {clientData?.dueDate || 'N/A'}</p>
+                                    <p className="text-slate-500 italic opacity-80">Borrowed Date: {clientData?.dateBorrowed || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {!isAdmin && view === 'client_notifications' && (
                         <div className="max-w-2xl mx-auto space-y-6 text-white">
                             <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center tracking-widest">Terminal Notifications</h2>
@@ -410,8 +408,30 @@ const App = () => {
                         </div>
                     )}
 
+                    {/* ✅ FULLY RESTORED: Client New Loan Application Terminal */}
+                    {!isAdmin && view === 'client_apply' && (
+                        <div className="max-w-2xl mx-auto bg-[#1e293b] p-10 rounded-[50px] border border-slate-700 text-white shadow-2xl">
+                            <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center tracking-widest text-blue-400">Application Dispatch</h2>
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                const d = Object.fromEntries(new FormData(e.target).entries());
+                                const getBase64 = (f) => new Promise(resolve => { if(!f || f.size === 0) resolve(null); const r = new FileReader(); r.onloadend = () => resolve(r.result); r.readAsDataURL(f); });
+                                const docID = await getBase64(d.fileID);
+                                await db.ref('requests').push({...d, email: user.email, name: clientData?.name || userData?.username, status: 'Pending', timestamp: Date.now(), doc_ID: docID});
+                                alert("Application Dispatched Securely."); setView('client_home');
+                            }} className="grid grid-cols-2 gap-5">
+                                <input name="amount" type="number" placeholder="Requested Amount ($)" className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-white text-lg font-black" required />
+                                <select name="term" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-700 font-black uppercase italic" required><option value="Weekly">Weekly</option><option value="Fortnightly">Fortnightly</option><option value="Monthly">Monthly</option></select>
+                                <input name="id_proof" placeholder="Valid ID details" className="p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-white" required />
+                                <div className="col-span-2 space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2 italic">Capture Selfie/ID (Optional)</label><input name="fileID" type="file" accept="image/*" capture="camera" className="w-full text-xs" /></div>
+                                <textarea name="income_proof" placeholder="Brief income description..." className="col-span-2 p-5 bg-[#0f172a] rounded-2xl border border-slate-700 text-white h-28" required></textarea>
+                                <button className="col-span-2 bg-blue-600 py-5 rounded-2xl font-black uppercase mt-6 hover:bg-blue-500 shadow-xl tracking-[4px] italic active:scale-95 transition-all">Submit Secure Application</button>
+                            </form>
+                        </div>
+                    )}
+
                     {!isAdmin && view === 'client_pay' && (
-                        <div className="max-w-md mx-auto bg-[#1e293b] p-12 rounded-[50px] border border-slate-700 text-white text-center shadow-2xl">
+                        <div className="max-w-md mx-auto bg-[#121b2e] p-12 rounded-[50px] border border-slate-700 text-white text-center shadow-2xl">
                             <h2 className="text-xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-green-400">Settlement Hub</h2>
                             <div className="bg-[#0f172a] p-6 rounded-3xl border border-slate-800 text-left mb-8 font-black uppercase text-[10px] space-y-4 shadow-inner">
                                 <p className="text-green-400 underline underline-offset-4 tracking-widest decoration-dotted italic">Online Transfer Mode</p>
@@ -506,7 +526,7 @@ const App = () => {
                             let up = { interestAmount: Math.max(0, updated), history: [...(payingClient.history || []), h] };
                             if(modalSubView === 'loan' && d.newDue) up.dueDate = d.newDue;
                             await db.ref(`clients/${payingClient.id}`).update(up);
-                            setPayingClient(null); setSelectedBank(''); alert("Sign Secured.");
+                            setPayingClient(null); setSelectedBank(''); alert("Processed.");
                         }} className="space-y-5">
                             {modalSubView === 'loan' ? (
                                 <>
