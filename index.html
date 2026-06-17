@@ -16,9 +16,16 @@
 
   <script type="text/babel">
     // 1. CONFIG (Paste your real keys here!)
-    const firebaseConfig = {
-      apiKey: "AIzaSyBEpUog1zPTTSlG_oVX4o8ENZsDTO3kRzE",
-      authDomain: "net-ten-accounting.firebaseapp.com",
+   /**
+ * Net Ten Ltd - Version 16.7
+ * UNIVERSAL STABILITY BUILD
+ * - Fixed: Fully restored client_apply (New Loan) and all alternative client views.
+ * - Retained: Zero-balance exclusion for outstanding rules, history search, 25% auto-calc, cash handover eSign.
+ */
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE", 
+    authDomain: "net-ten-accounting.firebaseapp.com",
     databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
     projectId: "net-ten-accounting",
     storageBucket: "net-ten-accounting.appspot.com",
@@ -569,6 +576,3 @@ const App = () => {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
-          </script>
-   </body>
-</html>
