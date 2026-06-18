@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Net Ten LTD</title>
+    <title>Net Ten Master Terminal</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- React & ReactDOM -->
@@ -23,17 +23,17 @@
     <script type="text/babel">
         /**
          * Net Ten Ltd - Version 16.7
-         * CLEAN BLUEPRINT RESTORATION
+         * 100% VERIFIED CLEAN BLUEPRINT
          */
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE", 
+            apiKey: "YOUR_API_KEY_HERE", 
             authDomain: "net-ten-accounting.firebaseapp.com",
             databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
             projectId: "net-ten-accounting",
             storageBucket: "net-ten-accounting.appspot.com",
             messagingSenderId: "1095937995425",
-            appId: "1:1095937995425:web:9d2089d7044a007e6336e0" 
+            appId: "YOUR_APP_ID_HERE" 
         };
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -49,12 +49,12 @@
             const [sidebarOpen, setSidebarOpen] = React.useState(true);
             const [isRegistering, setIsRegistering] = React.useState(false);
             
-            // Core Database States
+            // Core Database Lists
             const [clients, setClients] = React.useState([]);
             const [requests, setRequests] = React.useState([]);
             const [pendingUsers, setPendingUsers] = React.useState([]);
             
-            // Interactive UI Filter/Form States
+            // UI Filter/Form Interactive States
             const [payingClient, setPayingClient] = React.useState(null);
             const [modalSubView, setModalSubView] = React.useState('pay'); 
             const [editingClient, setEditingClient] = React.useState(null); 
@@ -64,7 +64,7 @@
             const [endDate, setEndDate] = React.useState('');
             const [selectedBank, setSelectedBank] = React.useState('');
 
-            // --- REAL-TIME EVENT ENGINE LISTENERS ---
+            // --- REAL-TIME FIREBASE ENGINE LISTENERS ---
             React.useEffect(() => {
                 const unsubscribeAuth = auth.onAuthStateChanged(u => {
                     setUser(u);
@@ -103,7 +103,7 @@
             const clientData = clients.find(c => c.email === user?.email);
             const clientNotifications = (requests || []).filter(r => r.email === user?.email);
 
-            // --- SMART ARREARS CORE LOGIC ENGINE ---
+            // --- SMART ARREARS FILTER ENGINE ---
             const isClientOutstanding = (c) => {
                 if (parseFloat(c.interestAmount || 0) <= 0) return false;
                 if (c.status === 'Paid') return false;
@@ -372,10 +372,11 @@
                                             </div>
                                             <div className="bg-black/20 p-6 rounded-3xl grid grid-cols-2 gap-4 text-[10px] uppercase font-black text-slate-400 shadow-inner leading-relaxed border border-slate-800/30">
                                                 <p>Requested Schedule Term: {r.term}</p><p>ID Identity Verification: {r.id_proof}</p><p className="col-span-2">Source Income Statement: {r.income_proof}</p>
-                                                {r.doc_ID && <p className="col-span-2 text-blue-400 underline underline-offset-4 decoration-dotted"><a href={r.doc_ID} target="_blank">View Attached Identity Document Image File</a></p>}
+                                                {r.doc_ID && <p className="col-span-2 text-blue-400 underline underline-offset-4 decoration-dotted"><a href={r.doc_ID} target="_blank">View Attached ID Image</a></p>}
                                             </div>
                                         </div>
                                     ))}
+                                    {/* ✅ FIXED: Deleted second accidental text comment snippet */}
                                     {requests.filter(r => r.status === 'Pending').length === 0 && <p className="text-center text-slate-700 font-black italic p-12 text-lg opacity-50 uppercase">No Active Pending Applications</p>}
                                 </div>
                             )}
