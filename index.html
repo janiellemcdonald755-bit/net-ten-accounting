@@ -3,37 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Net Ten Master Terminal</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- React & ReactDOM -->
+    <title>NET TEN LTD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- Babel for In-Browser JSX Transformation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Firebase Legacy SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
-<body class="bg-[#0f172a] text-slate-200 antialiased">
+<body class="bg-[#0f172a] text-slate-200 antialiased font-sans selection:bg-blue-600/30">
 
     <div id="root"></div>
 
     <script type="text/babel">
         /**
-         * Net Ten Ltd - Version 16.7
-         * 100% VERIFIED CLEAN BLUEPRINT
+         * Net Ten Ltd - Version 16.8
+         * THE COMPREHENSIVE CONSOLIDATED BUILD
          */
 
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY_HERE", 
+            apiKey: "AIzaSyBEpUog1zPTTSIG_oVX4o8ENZsDTO3kRzE", 
             authDomain: "net-ten-accounting.firebaseapp.com",
             databaseURL: "https://net-ten-accounting-default-rtdb.firebaseio.com",
             projectId: "net-ten-accounting",
             storageBucket: "net-ten-accounting.appspot.com",
             messagingSenderId: "1095937995425",
-            appId: "YOUR_APP_ID_HERE" 
+            appId: "1:1095937995425:web:9d2089d7044a007e6336e0" 
         };
 
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -42,19 +38,19 @@
         const ADMIN_EMAIL = "nettenltd@gmail.com";
 
         const App = () => {
-            // --- GLOBAL APPLICATION STATES ---
+            // --- CORE STATE APPLICATION INFRASTRUCTURE ---
             const [user, setUser] = React.useState(null);
             const [userData, setUserData] = React.useState(null);
             const [view, setView] = React.useState('home'); 
             const [sidebarOpen, setSidebarOpen] = React.useState(true);
             const [isRegistering, setIsRegistering] = React.useState(false);
             
-            // Core Database Lists
+            // Connected Real-Time Collections
             const [clients, setClients] = React.useState([]);
             const [requests, setRequests] = React.useState([]);
             const [pendingUsers, setPendingUsers] = React.useState([]);
             
-            // UI Filter/Form Interactive States
+            // Operational Interface Modals & Filters
             const [payingClient, setPayingClient] = React.useState(null);
             const [modalSubView, setModalSubView] = React.useState('pay'); 
             const [editingClient, setEditingClient] = React.useState(null); 
@@ -64,7 +60,7 @@
             const [endDate, setEndDate] = React.useState('');
             const [selectedBank, setSelectedBank] = React.useState('');
 
-            // --- REAL-TIME FIREBASE ENGINE LISTENERS ---
+            // --- REAL-TIME DATABASE RUNTIME SYNCHRONIZATIONS ---
             React.useEffect(() => {
                 const unsubscribeAuth = auth.onAuthStateChanged(u => {
                     setUser(u);
@@ -103,7 +99,7 @@
             const clientData = clients.find(c => c.email === user?.email);
             const clientNotifications = (requests || []).filter(r => r.email === user?.email);
 
-            // --- SMART ARREARS FILTER ENGINE ---
+            // --- SMART CALCULATED ARREARS TRACKING LOGIC ---
             const isClientOutstanding = (c) => {
                 if (parseFloat(c.interestAmount || 0) <= 0) return false;
                 if (c.status === 'Paid') return false;
@@ -124,7 +120,7 @@
                 }
             };
 
-            // --- SYSTEM METRICS METRICS TERMINAL ---
+            // --- SYSTEM AGGREGATIONS & LEDGER COMPILING ---
             const stats = (() => {
                 let totalOwed = 0; let totalPrincipal = 0; let collected = 0;
                 clients.forEach(c => {
@@ -143,7 +139,7 @@
                 };
             })();
 
-            // --- SIGNATURE DRAWING PAD MODULES ---
+            // --- ELECTRONIC proof PAD MODULES ---
             const startDrawing = (e) => {
                 const canvas = e.target; const ctx = canvas.getContext('2d'); const rect = canvas.getBoundingClientRect();
                 const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
@@ -159,7 +155,7 @@
             };
             const stopDrawing = (e) => { if(e.target) e.target.drawing = false; };
 
-            // --- SECURE AUTHORIZATION GATEWAYS ---
+            // --- IDENTITY ACCREDITATION SPLASH ROUTING ---
             if (!user) {
                 return (
                     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6 text-[12px]">
@@ -172,10 +168,10 @@
                                     try { await auth.signInWithEmailAndPassword(d.email, d.password); } catch(err) { alert("Authentication Failed."); }
                                 }} className="space-y-4">
                                     <h2 className="font-black uppercase italic mb-4 text-blue-400 tracking-widest">Net Ten Master Terminal</h2>
-                                    <input name="email" placeholder="Email / Username" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-white outline-none" required />
-                                    <input name="password" type="password" placeholder="Password" className="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-white outline-none" required />
-                                    <button className="w-full bg-blue-600 font-black py-5 rounded-2xl uppercase shadow-lg hover:bg-blue-500 transition-colors">Authenticate</button>
-                                    <button type="button" onClick={() => setIsRegistering(true)} className="text-slate-500 text-[10px] mt-4 block mx-auto uppercase underline">Create Account</button>
+                                    <input name="email" placeholder="Email / Username" class="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-white outline-none" required />
+                                    <input name="password" type="password" placeholder="Password" class="w-full p-5 bg-[#0f172a] rounded-2xl border border-slate-800 text-white outline-none" required />
+                                    <button class="w-full bg-blue-600 font-black py-5 rounded-2xl uppercase shadow-lg hover:bg-blue-500 transition-colors">Authenticate</button>
+                                    <button type="button" onClick={() => setIsRegistering(true)} class="text-slate-500 text-[10px] mt-4 block mx-auto uppercase underline">Create Account</button>
                                 </form>
                             ) : (
                                 <form onSubmit={async (e) => {
@@ -185,13 +181,13 @@
                                     alert("Onboarding Intent Sent Successfully."); setIsRegistering(false);
                                 }} className="space-y-4 text-left">
                                     <h2 className="font-black uppercase italic text-center mb-4 text-green-400">Registration Portal</h2>
-                                    <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Date of Birth</label><input name="dob" type="date" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required /></div>
-                                    <input name="username" placeholder="Full Client Name" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
-                                    <input name="phone" placeholder="Phone Contact Number" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
-                                    <input name="email" type="email" placeholder="Email Address Profile" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
-                                    <input name="password" type="password" placeholder="Secure System Password" className="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
-                                    <button className="w-full bg-green-600 font-black py-4 rounded-xl uppercase shadow-lg">Submit Secured Request</button>
-                                    <button type="button" onClick={() => setIsRegistering(false)} className="text-slate-500 text-[10px] block mx-auto text-center mt-2 underline">Back to Login</button>
+                                    <div className="space-y-1"><label className="text-[9px] text-slate-500 font-black uppercase ml-2">Date of Birth</label><input name="dob" type="date" class="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required /></div>
+                                    <input name="username" placeholder="Full Client Name" class="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
+                                    <input name="phone" placeholder="Phone Contact Number" class="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
+                                    <input name="email" type="email" placeholder="Email Address Profile" class="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
+                                    <input name="password" type="password" placeholder="Secure System Password" class="w-full p-4 bg-[#0f172a] rounded-xl border border-slate-700 text-white" required />
+                                    <button class="w-full bg-green-600 font-black py-4 rounded-xl uppercase shadow-lg">Submit Secured Request</button>
+                                    <button type="button" onClick={() => setIsRegistering(false)} class="text-slate-500 text-[10px] block mx-auto text-center mt-2 underline">Back to Login</button>
                                 </form>
                             )}
                         </div>
@@ -201,7 +197,7 @@
 
             return (
                 <div className="min-h-screen bg-[#0f172a] flex overflow-hidden font-sans text-[12px]">
-                    {/* --- MAIN NAVIGATION SIDEBAR --- */}
+                    {/* --- MAIN SIDE NAVIGATION PANEL --- */}
                     <aside className={`${sidebarOpen ? 'w-64' : 'w-0'} bg-[#1e293b] border-r border-slate-800 flex flex-col shrink-0 transition-all duration-300 overflow-hidden`}>
                         <div className="p-8 border-b border-slate-800 flex items-center gap-3 min-w-[250px]">
                             <img src="https://image2url.com/r2/default/images/1774110665422-b7648686-3a6e-4dd7-8fb7-81e80f230e33.png" className="w-10 h-10" />
@@ -234,15 +230,15 @@
                         </div>
                     </aside>
 
-                    {/* --- CORE INTERFACE DISPLAY INTERFACES --- */}
+                    {/* --- CORE WORKING WORKSPACE TERMINAL PANEL --- */}
                     <main className="flex-1 overflow-y-auto bg-[#0f172a]">
                         <header className="p-6 bg-[#1e293b] border-b border-slate-800 flex items-center justify-between sticky top-0 z-40">
                             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white bg-slate-800 px-4 py-2 rounded-lg font-bold uppercase text-[10px] hover:bg-slate-700 transition-colors">Menu</button>
-                            <span className="text-white font-black uppercase italic tracking-widest text-[10px] opacity-60">Net Ten Master Terminal v16.7</span>
+                            <span className="text-white font-black uppercase italic tracking-widest text-[10px] opacity-60">Net Ten Master Terminal v16.8</span>
                         </header>
 
                         <div className="p-8">
-                            {/* ADMIN PORTFOLIOS / OUTSTANDING WINDOW */}
+                            {/* ADMIN ACTIVE VIEWPORTS: HOMEPAGE / OUTSTANDING LEDGER */}
                             {isAdmin && (view === 'home' || view === 'outstanding') && (
                                 <div className="max-w-6xl mx-auto space-y-8">
                                     <div className={`bg-gradient-to-r ${view === 'outstanding' ? 'from-red-900' : 'from-blue-900'} to-slate-800 p-10 rounded-[40px] border border-white/10 shadow-2xl flex justify-between items-center text-white`}>
@@ -260,9 +256,10 @@
                                                             {!c.dueDate ? '⚠️ MISSING DUE DATE' : `Due: ${c.dueDate}`}
                                                         </p>
                                                     </div>
+                                                    {/* ✅ FIXED: Closed string attribute syntax cleanly */}
                                                     <div className="flex gap-2">
                                                         <button onClick={() => setEditingClient(c)} className="bg-slate-800 text-blue-400 px-2 py-1 rounded text-[9px] font-bold uppercase hover:bg-slate-700 transition-colors">Details</button>
-                                                        <button onClick={() => { if(confirm("DELETE CONSOLE DATA?")) db.ref(`clients/${c.id}`).remove(); }} className="bg-red-900/20 text-red-400 border border-red-900 px-2 py-1 rounded text-[9px] font-bold uppercase hover:bg-red-900/40 transition-colors">Delete</button>
+                                                        <button onClick={() => { if(confirm("DELETE PORTFOLIO DATA?")) db.ref(`clients/${c.id}`).remove(); }} className="bg-red-900/20 text-red-400 border border-red-900 px-2 py-1 rounded text-[9px] font-bold uppercase hover:bg-red-900/40 transition-colors">Delete</button>
                                                     </div>
                                                 </div>
                                                 <p className="text-green-400 text-5xl font-black italic mb-6 tracking-tighter">${parseFloat(c.interestAmount || 0).toFixed(2)}</p>
@@ -276,7 +273,7 @@
                                 </div>
                             )}
 
-                            {/* ADMIN: MASTER TRANSACTION HISTORY */}
+                            {/* ADMIN: MASTER TRANSACTIONS LEDGER TERMINAL */}
                             {isAdmin && view === 'master_history' && (
                                 <div className="max-w-4xl mx-auto bg-[#1e293b] p-10 rounded-[40px] border border-slate-700 text-white shadow-2xl">
                                     <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center text-blue-400">Master Ledger</h2>
@@ -300,14 +297,14 @@
                                                     <button onClick={() => { if(confirm("Delete record from history portfolio?")) { const cl = clients.find(cl => cl.id === h.clientId); const nh = [...cl.history]; nh.splice(h.index, 1); db.ref(`clients/${h.clientId}/history`).set(nh); } }} className="text-red-600 opacity-60 hover:opacity-100 transition-opacity">🗑</button>
                                                     <div><p className="font-bold text-lg uppercase tracking-tight">{h.name}</p><p className="text-slate-500 text-[10px] uppercase font-black">{h.date} • {h.type} • {h.method}</p></div>
                                                 </div>
-                                                <span className={`font-black text-xl italic tracking-tight ${h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}`}>{h.type === 'Payment' ? '-' : '+'}${parseFloat(h.amount).toFixed(2)}</span>
+                                                <span className={`font-black text-xl italic tracking-tight ${h.type === 'Payment' ? 'text-green-400' : 'text-blue-400'}`}>{(h.type === 'Payment' ? '-' : '+')}${parseFloat(h.amount).toFixed(2)}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            {/* ADMIN: ONBOARD NEW PORTFOLIO */}
+                            {/* ADMIN: INITIAL PORTFOLIO ONBOARDING INTERFACES */}
                             {isAdmin && view === 'add' && (
                                 <div className="max-w-2xl mx-auto bg-[#1e293b] p-10 rounded-[50px] border border-slate-700 text-white shadow-2xl">
                                     <h2 className="text-2xl font-black uppercase italic mb-8 border-b border-slate-800 pb-4 text-center tracking-widest text-blue-400">Onboard Portfolio Terminal</h2>
@@ -336,7 +333,7 @@
                                 </div>
                             )}
 
-                            {/* ADMIN: USER ACCESS REQUESTS INBOX */}
+                            {/* ADMIN: USER SYSTEM INBOX SYSTEM PARAMETERS */}
                             {isAdmin && view === 'inbox_accounts' && (
                                 <div className="max-w-4xl mx-auto space-y-4">
                                     <h2 className="text-white text-xl font-black uppercase italic mb-6">User Access Approvals Inbox</h2>
@@ -357,7 +354,7 @@
                                 </div>
                             )}
 
-                            {/* ADMIN: LOAN APPLICATION REQUEST INBOX */}
+                            {/* ADMIN: ACTIVE INCOMING LOAN APPLICATIONS */}
                             {isAdmin && view === 'inbox_loans' && (
                                 <div className="max-w-4xl mx-auto space-y-6 text-white">
                                     <h2 className="text-xl font-black uppercase italic mb-6">Client Loan Applications Inbox</h2>
@@ -372,16 +369,15 @@
                                             </div>
                                             <div className="bg-black/20 p-6 rounded-3xl grid grid-cols-2 gap-4 text-[10px] uppercase font-black text-slate-400 shadow-inner leading-relaxed border border-slate-800/30">
                                                 <p>Requested Schedule Term: {r.term}</p><p>ID Identity Verification: {r.id_proof}</p><p className="col-span-2">Source Income Statement: {r.income_proof}</p>
-                                                {r.doc_ID && <p className="col-span-2 text-blue-400 underline underline-offset-4 decoration-dotted"><a href={r.doc_ID} target="_blank">View Attached ID Image</a></p>}
+                                                {r.doc_ID && <p className="col-span-2 text-blue-400 underline underline-offset-4 decoration-dotted"><a href={r.doc_ID} target="_blank">View Attached ID Image File</a></p>}
                                             </div>
                                         </div>
                                     ))}
-                                    {/* ✅ FIXED: Deleted second accidental text comment snippet */}
                                     {requests.filter(r => r.status === 'Pending').length === 0 && <p className="text-center text-slate-700 font-black italic p-12 text-lg opacity-50 uppercase">No Active Pending Applications</p>}
                                 </div>
                             )}
 
-                            {/* ADMIN: ANALYTICS HUB VIEW */}
+                            {/* ADMIN: STATS PORTFOLIO METRICS MODULES */}
                             {isAdmin && view === 'analytics' && (
                                 <div className="max-w-4xl mx-auto space-y-10 text-white text-center">
                                     <h2 className="text-2xl font-black uppercase italic mb-6 tracking-widest text-blue-400 underline underline-offset-8">Terminal BI Financial Analysis</h2>
@@ -393,7 +389,7 @@
                                 </div>
                             )}
 
-                            {/* --- CLIENT GRAPHICS INTERFACES --- */}
+                            {/* --- CLIENT DASHBOARD USER VIEWS --- */}
                             {!isAdmin && view === 'client_home' && (
                                 <div className="max-w-md mx-auto text-center text-white space-y-8">
                                     <div className="bg-[#1e293b] p-16 rounded-[60px] border border-slate-700 shadow-2xl">
@@ -493,9 +489,9 @@
                         </div>
                     </main>
 
-                    {/* --- CONSOLE COMPONENT ACTION MODALS --- */}
+                    {/* --- CONSOLE COMPONENT INTERACTIVE ACTION MODALS --- */}
                     
-                    {/* ADMIN MODE: DATA CORRECTION TERMINAL INTERFACE */}
+                    {/* ADMIN MODE: DATA CORRECTION TERMINAL INFRASTRUCTURE */}
                     {isAdmin && editingClient && (
                         <div className="fixed inset-0 bg-black/95 z-[999] flex items-center justify-center p-6 backdrop-blur-md text-white">
                             <div className="bg-[#1e293b] p-12 rounded-[50px] w-full max-w-2xl border border-slate-700 shadow-2xl overflow-y-auto max-h-[90vh]">
@@ -538,7 +534,7 @@
                                     const current = parseFloat(payingClient.interestAmount || 0);
                                     const updated = modalSubView === 'loan' ? current + amt : current - amt;
                                     const finalMethod = (d.method === "Online Transfer") ? `Online: ${d.bankSelection}${d.otherBank ? ' (' + d.otherBank + ')' : ''}` : d.method;
-                                    const h = { amount: modalSubView === 'loan' ? amt : parseFloat(d.amount), date: d.date, type: modalSubView === 'loan' ? 'Disbursement' : 'Payment', method: finalMethod, timestamp: Date.now() };
+                                    const h = { amount: amt, date: d.date, type: modalSubView === 'loan' ? 'Disbursement' : 'Payment', method: finalMethod, timestamp: Date.now() };
                                     if(modalSubView === 'loan' && d.method === "Cash Handover") h.signature = document.getElementById('esignCanvas').toDataURL();
                                     let up = { interestAmount: Math.max(0, updated), history: [...(payingClient.history || []), h] };
                                     if(modalSubView === 'loan' && d.newDue) up.dueDate = d.newDue;
